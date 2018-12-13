@@ -142,6 +142,7 @@ class CommonConnection:
     def get_zone_by_tag(self, tag):
         """
         :param str tag:
+        :rtype Zone
         """
         raise NotImplementedError
 
