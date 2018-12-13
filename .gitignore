@@ -157,3 +157,7 @@ Temporary Items
 
 #JSON file containing API keys and API secrets
 secrets.json
+
+#Virtual env
+venv
+venv3
