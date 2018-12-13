@@ -2,7 +2,8 @@ import requests
 import logging as log
 from http import HTTPStatus
 from .errors import ConnectionError, ServerUnexptedBehavior, ClientBadData
-from .common import Zone, SigningRequest
+from .common import Zone, CertificateRequest, Certificate, CommonConnection
+
 
 class URLS:
     API_BASE_URL = "https://api.venafi.cloud/v1/"
@@ -22,6 +23,7 @@ class URLS:
     MANAGED_CERTIFICATE_BY_ID = MANAGED_CERTIFICATES + "/%s"
 
 
+
 TOKEN_HEADER_NAME = "tppl-api-key"
 
 # todo: check stdlib
@@ -39,7 +41,7 @@ def log_errors(data):
         log.error(str(e))  #todo: beta formatter
 
 
-class CloudConnection:
+class CloudConnection(CommonConnection):
     def __init__(self, token, url=None, *args, **kwargs):
         """
         todo: docs
@@ -62,7 +64,7 @@ class CloudConnection:
 
     @staticmethod
     def _process_server_response(r):
-        if r.status_code not in (HTTPStatus.OK, HTTPStatus.ACCEPTED):
+        if r.status_code not in (HTTPStatus.OK, HTTPStatus.CREATED, HTTPStatus.ACCEPTED):
             raise ConnectionError("Server status: %s, %s", (r.status_code, r.request.url))
         content_type = r.headers.get("content-type")
         if content_type == MINE_TEXT:
@@ -78,12 +80,11 @@ class CloudConnection:
     def _get_cert_status(self, request_id):
         status, data = self._get(URLS.CERTIFICATE_STATUS % request_id)
         if status == HTTPStatus.OK:
-            return data
+            return Certificate.from_server_response(data)
 
     def _get_policy_by_ids(self, policy_ids):
         for policy_id in policy_ids:
             status, data = self._get(URLS.POLICIES_BY_ID % policy_id)
-
 
     def ping(self):
         status, data = self._get(URLS.PING)
@@ -109,13 +110,12 @@ class CloudConnection:
         else:
             pass
 
-    def request_cert(self, request, zone):
-        """
-        :param SigningRequest request:
-        :param str zone:
-        :return:
-        """
-        request
+    def request_cert(self, csr, zone):
+        z = self.get_zone_by_tag(zone)
+        status, data = self._post(URLS.CERTIFICATE_REQUESTS, data={"certificateSigningRequest": csr, "zoneId": z.id})
+        if status == HTTPStatus.CREATED:
+            request = CertificateRequest.from_server_response(data['certificateRequests'][0])
+            return request.id
 
     def retrieve_cert(self, request):
         raise NotImplementedError

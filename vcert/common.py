@@ -1,13 +1,14 @@
 import datetime
 import dateutil.parser
-from asn1crypto import x509, csr
+import time
+import logging as log
 from oscrypto import asymmetric
-from csrbuilder import CSRBuilder
+from csrbuilder import CSRBuilder, pem_armor_csr
 
 
-
-def generate_certificate_request():
-    pass
+class CertStatuses:
+    REQUESTED = 'REQUESTED'
+    PENDING = 'PENDING'
 
 
 class CertField(str):
@@ -99,10 +100,88 @@ def build_request(country, province, locality, organization, organization_unit, 
     builder.hash_algo = "sha256"
     builder.subject_alt_domains = [common_name]
     request = builder.build(private_key)
-    return request.dump()
+    return pem_armor_csr(request)
 
 
-class SigningRequest:
-    pass
+class CertificateRequest:
+    def __init__(self, id, status):
+        self.id = id
+        self.status = status
+
+    @classmethod
+    def from_server_response(cls, d):
+        return cls(d['id'], d['status'])
 
 
+class Certificate:
+    def __init__(self, id, status):
+        self.id = id
+        self.status = status
+
+    @classmethod
+    def from_server_response(cls, d):
+        return cls(d['id'], d['status'])
+
+
+class CommonConnection:
+    def _get_cert_status(self, request_id):
+        raise NotImplementedError
+
+    def _get_policy_by_ids(self, policy_ids):
+        raise NotImplementedError
+
+    def ping(self):
+        raise NotImplementedError
+
+    def auth(self):
+        raise NotImplementedError
+
+    def register(self, email):
+        raise NotImplementedError
+
+    def get_zone_by_tag(self, tag):
+        """
+        :param str tag:
+        """
+        raise NotImplementedError
+
+    def request_cert(self, csr, zone):
+        """
+        :param str csr:
+        :param str zone:
+        """
+        raise NotImplementedError
+
+    def retrieve_cert(self, request):
+        raise NotImplementedError
+
+    def revoke_cert(self, request):
+        raise NotImplementedError
+
+    def renew_cert(self, request):
+        raise NotImplementedError
+
+    def read_zone_conf(self):
+        raise NotImplementedError
+
+    def gen_request(self, zone_config, request):
+        raise NotImplementedError
+
+    def import_cert(self, request):
+        raise NotImplementedError
+
+    def make_request_and_wait_certificate(self, csr, zone):
+        """
+        :param str csr:
+        :param str zone:
+        """
+        pickup_id = self.request_cert(csr, zone)
+        log.info("Send certificate request, got pickupId: %s" % pickup_id)
+        while True:
+            time.sleep(10)
+            log.info("Checking status for %s" % pickup_id)
+            cert = self._get_cert_status(pickup_id)
+            if cert.status not in (CertStatuses.REQUESTED, CertStatuses.PENDING):
+                break
+        log.info("Status: %s" % cert.status)
+        return cert
