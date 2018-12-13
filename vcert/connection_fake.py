@@ -20,6 +20,23 @@ def fake_user(email=None):
     return f
 
 
+def fake_zone(zone=None):
+    fake_company_uuid = str(uuid.uuid4())
+    fake_zone_uuid = str(uuid.uuid4())
+    fake_zone = zone or 'default'
+    z = {'certificatePolicyIds': {'CERTIFICATE_IDENTITY': ['eaca6114-1569-4903-911e-436404a7cf4d'],
+                                  'CERTIFICATE_USE': ['5353c8a7-7b60-486e-9c35-9d2b3ae37038']},
+         'companyId': fake_company_uuid,
+         'creationDate': '2018-10-11T13:51:56.360+0000',
+         'defaultCertificateIdentityPolicyId': 'ef2c3761-74e8-4ec9-8cd4-c9ab1e5c9d94',
+         'defaultCertificateUsePolicyId': '17116035-aaae-4c90-a3c6-46e1b0c3c2e7',
+         'id': fake_zone_uuid,
+         'systemGenerated': False,
+         'tag': fake_zone,
+         'zoneType': 'OTHER'}
+    return z
+
+
 class ConnectionFake():
     def __init__(self, *args, **kwargs):
         """
@@ -34,3 +51,28 @@ class ConnectionFake():
     
     def register(self, email):
         return fake_user(email)
+
+    def get_zone_by_tag(self, tag):
+        return fake_zone(tag)
+
+    def request_cert(self, request, zone):
+        raise NotImplementedError
+
+    def retrieve_cert(self, request):
+        raise NotImplementedError
+
+    def revoke_cert(self, request):
+        raise NotImplementedError
+
+    def renew_cert(self, request):
+        raise NotImplementedError
+
+    def read_zone_conf(self):
+        raise NotImplementedError
+
+    def gen_request(self, zone_config, request):
+        raise NotImplementedError
+
+    def import_cert(self, request):
+        raise NotImplementedError
+

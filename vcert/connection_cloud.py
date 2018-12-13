@@ -2,6 +2,7 @@ import requests
 import logging as log
 from http import HTTPStatus
 from .errors import ConnectionError, ServerUnexptedBehavior, ClientBadData
+from .common import Zone, SigningRequest
 
 class URLS:
     API_BASE_URL = "https://api.venafi.cloud/v1/"
@@ -23,13 +24,19 @@ class URLS:
 
 TOKEN_HEADER_NAME = "tppl-api-key"
 
+# todo: check stdlib
+MIME_JSON = "application/json"
+MINE_TEXT = "text/plain"
+MINE_ANY = "*/*"
+
+
 # todo: maybe move this function
 def log_errors(data):
     if "errors" not in data:
         log.error("Unknown error format: %s", data)
         return
     for e in data["errors"]:
-        log.error()
+        log.error(str(e))  #todo: beta formatter
 
 
 class CloudConnection:
@@ -41,7 +48,8 @@ class CloudConnection:
         self._token = token
 
     def _get(self, url, params=None):
-        r = requests.get(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token})
+        # todo: catch requests.exceptions
+        r = requests.get(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token, "Accept": MINE_ANY})
         return self._process_server_response(r)
 
     def _post(self, url, params=None, data=None):
@@ -55,23 +63,29 @@ class CloudConnection:
     @staticmethod
     def _process_server_response(r):
         if r.status_code not in (HTTPStatus.OK, HTTPStatus.ACCEPTED):
-            raise ConnectionError("Server status: %s", r.status_code)
+            raise ConnectionError("Server status: %s, %s", (r.status_code, r.request.url))
         content_type = r.headers.get("content-type")
-        if content_type == "text/plain":
+        if content_type == MINE_TEXT:
             log.debug(r.text)
             return r.status_code, r.text
-        elif content_type == "application/json":
+        elif content_type == MIME_JSON:
             log.debug(r.content.decode())
             return r.status_code, r.json()
         else:
-            log.error("unexpected content type: %s for request %s" % (content_type, url))
+            log.error("unexpected content type: %s for request %s" % (content_type, r.request.url))
             raise ServerUnexptedBehavior
 
+    def _get_cert_status(self, request_id):
+        status, data = self._get(URLS.CERTIFICATE_STATUS % request_id)
+        if status == HTTPStatus.OK:
+            return data
+
+    def _get_policy_by_ids(self, policy_ids):
+        for policy_id in policy_ids:
+            status, data = self._get(URLS.POLICIES_BY_ID % policy_id)
+
+
     def ping(self):
-        """
-        Check server status
-        :return bool:
-        """
         status, data = self._get(URLS.PING)
 
         return status == HTTPStatus.OK and data == "OK"
@@ -89,9 +103,34 @@ class CloudConnection:
     def get_zone_by_tag(self, tag):
         status, data = self._get(URLS.ZONE_BY_TAG % tag)
         if status == HTTPStatus.OK:
-            return data
+            return Zone.from_server_response(data)
         elif status in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND, HTTPStatus.PRECONDITION_FAILED):
             log_errors(data)
         else:
             pass
 
+    def request_cert(self, request, zone):
+        """
+        :param SigningRequest request:
+        :param str zone:
+        :return:
+        """
+        request
+
+    def retrieve_cert(self, request):
+        raise NotImplementedError
+
+    def revoke_cert(self, request):
+        raise NotImplementedError
+
+    def renew_cert(self, request):
+        raise NotImplementedError
+
+    def read_zone_conf(self):
+        raise NotImplementedError
+
+    def gen_request(self, zone_config, request):
+        raise NotImplementedError
+
+    def import_cert(self, request):
+        raise NotImplementedError
