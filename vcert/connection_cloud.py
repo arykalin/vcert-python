@@ -1,9 +1,8 @@
-import time
 import requests
 import logging as log
 from http import HTTPStatus
 from .errors import ConnectionError, ServerUnexptedBehavior, ClientBadData
-from .common import Zone, CertificateRequest, Certificate
+from .common import Zone, CertificateRequest, Certificate, CommonConnection
 
 
 class URLS:
@@ -24,9 +23,6 @@ class URLS:
     MANAGED_CERTIFICATE_BY_ID = MANAGED_CERTIFICATES + "/%s"
 
 
-class CertStatuses:
-    REQUESTED = 'REQUESTED'
-    PENDING = 'PENDING'
 
 TOKEN_HEADER_NAME = "tppl-api-key"
 
@@ -45,7 +41,7 @@ def log_errors(data):
         log.error(str(e))  #todo: beta formatter
 
 
-class CloudConnection:
+class CloudConnection(CommonConnection):
     def __init__(self, token, url=None, *args, **kwargs):
         """
         todo: docs
@@ -106,9 +102,6 @@ class CloudConnection:
             return data
 
     def get_zone_by_tag(self, tag):
-        """
-        :param str tag:
-        """
         status, data = self._get(URLS.ZONE_BY_TAG % tag)
         if status == HTTPStatus.OK:
             return Zone.from_server_response(data)
@@ -118,24 +111,11 @@ class CloudConnection:
             pass
 
     def request_cert(self, csr, zone):
-        """
-        :param str csr:
-        :param str zone:
-        """
         z = self.get_zone_by_tag(zone)
         status, data = self._post(URLS.CERTIFICATE_REQUESTS, data={"certificateSigningRequest": csr, "zoneId": z.id})
         if status == HTTPStatus.CREATED:
             request = CertificateRequest.from_server_response(data['certificateRequests'][0])
-            pickup_id = request.id
-            log.info("Send certificate request, got pickupId: %s" % pickup_id)
-            while True:
-                time.sleep(10)
-                log.info("Checking status for %s" % pickup_id)
-                cert = self._get_cert_status(pickup_id)
-                if cert.status not in (CertStatuses.REQUESTED, CertStatuses.PENDING):
-                    break
-            log.info("Status: %s" % cert.status)
-            return cert
+            return request.id
 
     def retrieve_cert(self, request):
         raise NotImplementedError

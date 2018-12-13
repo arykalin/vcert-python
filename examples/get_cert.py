@@ -7,6 +7,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 TOKEN = ""
 
+
 def main():
     conn = CloudConnection(TOKEN)
     status = conn.ping()
@@ -16,8 +17,9 @@ def main():
         exit(1)
     conn.auth()
 
-    csr = build_request("US", "Moscow", "Moscow", "Venafi", "", "rewrewrwer.venafi.example.com")
-    pprint(conn.request_cert(csr, "Default"))
+    csr = build_request("US", "Moscow", "Moscow", "Venafi", "", "rewrewrwer1.venafi.example.com")
+    pprint(conn.make_request_and_wait_certificate(csr, "Default"))
+
 
 if __name__ == '__main__':
     main()
