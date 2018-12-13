@@ -2,9 +2,10 @@
 from vcert import CloudConnection
 from vcert.common import build_request
 from pprint import pprint
+import logging
 
+logging.basicConfig(level=logging.INFO)
 TOKEN = ""
-
 
 def main():
     conn = CloudConnection(TOKEN)
@@ -14,9 +15,9 @@ def main():
         print('Server offline')
         exit(1)
     conn.auth()
-    zone = conn.get_zone_by_tag("default")
-    print("zone:", zone)
-    print(build_request("RU", "Moscow", "Moscow", "Venafi", "", "example.com"))
+
+    csr = build_request("US", "Moscow", "Moscow", "Venafi", "", "rewrewrwer.venafi.example.com")
+    pprint(conn.request_cert(csr, "Default"))
 
 if __name__ == '__main__':
     main()

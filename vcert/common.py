@@ -1,8 +1,7 @@
 import datetime
 import dateutil.parser
-from asn1crypto import x509, csr
 from oscrypto import asymmetric
-from csrbuilder import CSRBuilder
+from csrbuilder import CSRBuilder, pem_armor_csr
 
 
 
@@ -99,10 +98,25 @@ def build_request(country, province, locality, organization, organization_unit, 
     builder.hash_algo = "sha256"
     builder.subject_alt_domains = [common_name]
     request = builder.build(private_key)
-    return request.dump()
+    return pem_armor_csr(request)
 
 
-class SigningRequest:
-    pass
+class CertificateRequest:
+    def __init__(self, id, status):
+        self.id = id
+        self.status = status
 
+    @classmethod
+    def from_server_response(cls, d):
+        return cls(d['id'], d['status'])
+
+
+class Certificate:
+    def __init__(self, id, status):
+        self.id = id
+        self.status = status
+
+    @classmethod
+    def from_server_response(cls, d):
+        return cls(d['id'], d['status'])
 
