@@ -7,18 +7,15 @@ from .common import Zone, CertificateRequest, Certificate, CommonConnection
 class URLS:
     API_BASE_URL = ""
 
-    USER_ACCOUNTS = "useraccounts"
-    ZONES = "zones"
-    ZONE_BY_TAG = ZONES + "/tag/%s"
-    CERTIFICATE_POLICIES = "certificatepolicies"
-    POLICIES_BY_ID = CERTIFICATE_POLICIES + "/%s"
-    POLICIES_FOR_ZONE_BY_ID = CERTIFICATE_POLICIES + "?zoneId=%s"
-    CERTIFICATE_REQUESTS = "certificaterequests"
-    CERTIFICATE_STATUS = CERTIFICATE_REQUESTS + "/%s"
-    CERTIFICATE_RETRIEVE = CERTIFICATE_REQUESTS + "/%s/certificate"
-    CERTIFICATE_SEARCH = "certificatesearch"
-    MANAGED_CERTIFICATES = "managedcertificates"
-    MANAGED_CERTIFICATE_BY_ID = MANAGED_CERTIFICATES + "/%s"
+    AUTHORIZE = "authorize/"
+    CERTIFICATE_REQUESTS = "certificates/request"
+    CERTIFICATE_RETRIEVE = "certificates/retrieve"
+    FIND_POLICY = "config/findpolicy"
+    CERTIFICATE_REVOKE = "certificates/revoke"
+    CERTIFICATE_REVNEW = "certificates/renew"
+    CERTIFICATE_SEARCH = "certificates/"
+    CERTIFICATE_IMPORT = "certificates/import"
+
 
 
 TOKEN_HEADER_NAME = "tppl-api-key"
@@ -92,14 +89,12 @@ class TPPConnection(CommonConnection):
         return status == HTTPStatus.OK and "Ready" in data
 
     def auth(self):
-        status, data = self._get(URLS.USER_ACCOUNTS)
+        status, data = self._get(URLS.AUTHORIZE)
         if status == HTTPStatus.OK:
             return data
 
-    def register(self, email):
-        status, data = self._post(URLS.USER_ACCOUNTS, data={"username": email, "userAccountType": "API"})
-        if status == HTTPStatus.ACCEPTED:
-            return data
+    def register(self):
+        return None
 
     def get_zone_by_tag(self, tag):
         status, data = self._get(URLS.ZONE_BY_TAG % tag)
