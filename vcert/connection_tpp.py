@@ -49,7 +49,7 @@ class TPPConnection(CommonConnection):
 
     def _get(self, url="", params=None):
         # todo: catch requests.exceptions
-        r = requests.get(self._base_url + url, headers={'Content-Type': 'application/json','cache-control':
+        r = requests.get(self._base_url + url, headers={'content-type': 'application/json','cache-control':
                 'no-cache'})
         return self._process_server_response(r)
 
@@ -89,8 +89,7 @@ class TPPConnection(CommonConnection):
 
     def ping(self):
         status, data = self._get()
-
-        return status == HTTPStatus.OK and data == "OK"
+        return status == HTTPStatus.OK and "Ready" in data
 
     def auth(self):
         status, data = self._get(URLS.USER_ACCOUNTS)
