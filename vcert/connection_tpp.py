@@ -57,7 +57,7 @@ class TPPConnection(CommonConnection):
         r = requests.get(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token[0], 'content-type':
         MIME_JSON,'cache-control':
                 'no-cache'})
-        return CommonConnection.process_server_response(r)
+        return self.process_server_response(r)
 
     def _post(self, url, params=None, data=None):
         if not self._token:
@@ -71,7 +71,7 @@ class TPPConnection(CommonConnection):
         else:
             log.error("Unexpected client data type: %s for %s" % (type(data), url))
             raise ClientBadData
-        return CommonConnection.process_server_response(r)
+        return self.process_server_response(r)
 
     def _get_cert_status(self, request_id):
         status, data = self._get(URLS.CERTIFICATE_STATUS % request_id)
@@ -93,7 +93,7 @@ class TPPConnection(CommonConnection):
         r = requests.post(self._base_url + URLS.AUTHORIZE, headers={'content-type':
             MIME_JSON, "cache-control": "no-cache"}, json=data)
 
-        status = CommonConnection.process_server_response(r)
+        status = self.process_server_response(r)
         if status[0] == HTTPStatus.OK:
             return status[1]["APIKey"], status[1]["ValidUntil"]
         else:
