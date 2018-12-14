@@ -2,7 +2,7 @@ import requests
 import logging as log
 from http import HTTPStatus
 from .errors import ConnectionError, ServerUnexptedBehavior, ClientBadData
-from .common import Zone, SigningRequest
+from .common import Zone, CertificateRequest, Certificate, CommonConnection
 
 class URLS:
     API_BASE_URL = ""
@@ -25,7 +25,7 @@ TOKEN_HEADER_NAME = "tppl-api-key"
 
 # todo: check stdlib
 MIME_JSON = "application/json"
-MINE_TEXT = "text/plain"
+MINE_HTML = "text/html"
 MINE_ANY = "*/*"
 
 
@@ -38,7 +38,7 @@ def log_errors(data):
         log.error(str(e))  #todo: beta formatter
 
 
-class TPPConnection:
+class TPPConnection(CommonConnection):
     def __init__(self, user, password, url, *args, **kwargs):
         """
         todo: docs
@@ -49,7 +49,7 @@ class TPPConnection:
 
     def _get(self, url="", params=None):
         # todo: catch requests.exceptions
-        r = requests.get(self._base_url + url, headers={'content-type': 'application/json','cache-control':
+        r = requests.get(self._base_url + url, headers={'Content-Type': 'application/json','cache-control':
                 'no-cache'})
         return self._process_server_response(r)
 
@@ -67,7 +67,7 @@ class TPPConnection:
         if r.status_code not in (HTTPStatus.OK, HTTPStatus.ACCEPTED):
             raise ConnectionError("Server status: %s, %s", (r.status_code, r.request.url))
         content_type = r.headers.get("content-type")
-        if content_type == MINE_TEXT:
+        if content_type == MINE_HTML:
             log.debug(r.text)
             return r.status_code, r.text
         elif content_type == MIME_JSON:
