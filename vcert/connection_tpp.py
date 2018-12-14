@@ -42,6 +42,7 @@ class TPPConnection(CommonConnection):
         self._base_url = url
         self._user = user
         self._password = password
+        self._token = False
         # todo: add timeout check, like self.token = ("token-string-dsfsfdsfdsfdsf", valid_to)
 
 
@@ -102,9 +103,17 @@ class TPPConnection(CommonConnection):
         return status == HTTPStatus.OK and "Ready" in data
 
     def auth(self):
-        status, data = self._post(URLS.AUTHORIZE, data={"Username": self._user, "Password": self._password})
-        if status == HTTPStatus.OK:
-            return data["APIKey"], data["ValidUntil"]
+        data = {"Username": self._user, "Password": self._password}
+
+        r = requests.post(self._base_url + URLS.AUTHORIZE, headers={'content-type':
+            MIME_JSON, "cache-control": "no-cache"}, json=data)
+
+        status = self._process_server_response(r)
+        if status[0] == HTTPStatus.OK:
+            return status[1]["APIKey"], status[1]["ValidUntil"]
+        else:
+            log.error("Authentication status is not %s but %s. Exiting" % (HTTPStatus.OK, status[0]))
+            exit(1)
 
     def register(self):
         return None
