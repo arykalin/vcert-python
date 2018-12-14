@@ -43,19 +43,27 @@ class TPPConnection(CommonConnection):
         self._user = user
         self._password = password
         # todo: add timeout check, like self.token = ("token-string-dsfsfdsfdsfdsf", valid_to)
-        self._token, self._token_timeout = self.auth()
-        log.debug("Token is %s, timeout is %s" % (self._token, self._token_timeout))
+
+
 
     def _get(self, url="", params=None):
         # todo: catch requests.exceptions
-        r = requests.get(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token, 'content-type':
+        if not self._token:
+            self._token = self.auth()
+            log.debug("Token is %s, timeout is %s" % (self._token[0], self._token[1]))
+
+        r = requests.get(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token[0], 'content-type':
         MIME_JSON,'cache-control':
                 'no-cache'})
         return self._process_server_response(r)
 
-    def _post(self, url, params=None, data=None, token=None):
+    def _post(self, url, params=None, data=None):
+        if not self._token:
+            self._token = self.auth()
+            log.debug("Token is %s, timeout is %s" % (self._token[0], self._token[1]))
+
         if isinstance(data, dict):
-            r = requests.post(self._base_url + url, headers={TOKEN_HEADER_NAME: token, 'content-type':
+            r = requests.post(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token[0], 'content-type':
                 MIME_JSON,"cache-control":
                 "no-cache"}, json=data)
         else:
