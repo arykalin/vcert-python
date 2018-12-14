@@ -22,6 +22,7 @@ TOKEN_HEADER_NAME = "x-venafi-api-key"
 # todo: check stdlib
 MIME_JSON = "application/json"
 MINE_HTML = "text/html"
+MINE_TEXT = "text/plain"
 MINE_ANY = "*/*"
 
 
@@ -56,7 +57,7 @@ class TPPConnection(CommonConnection):
         r = requests.get(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token[0], 'content-type':
         MIME_JSON,'cache-control':
                 'no-cache'})
-        return self._process_server_response(r)
+        return CommonConnection.process_server_response(r)
 
     def _post(self, url, params=None, data=None):
         if not self._token:
@@ -70,23 +71,7 @@ class TPPConnection(CommonConnection):
         else:
             log.error("Unexpected client data type: %s for %s" % (type(data), url))
             raise ClientBadData
-        return self._process_server_response(r)
-
-    @staticmethod
-    def _process_server_response(r):
-        if r.status_code not in (HTTPStatus.OK, HTTPStatus.ACCEPTED):
-            raise ConnectionError("Server status: %s, %s", (r.status_code, r.request.url))
-        content_type = r.headers.get("content-type")
-        if content_type == MINE_HTML:
-            log.debug(r.text)
-            return r.status_code, r.text
-        # content-type in respons is  application/json; charset=utf-8
-        elif MIME_JSON in content_type:
-            log.debug(r.content.decode())
-            return r.status_code, r.json()
-        else:
-            log.error("unexpected content type: %s for request %s" % (content_type, r.request.url))
-            raise ServerUnexptedBehavior
+        return CommonConnection.process_server_response(r)
 
     def _get_cert_status(self, request_id):
         status, data = self._get(URLS.CERTIFICATE_STATUS % request_id)
@@ -108,7 +93,7 @@ class TPPConnection(CommonConnection):
         r = requests.post(self._base_url + URLS.AUTHORIZE, headers={'content-type':
             MIME_JSON, "cache-control": "no-cache"}, json=data)
 
-        status = self._process_server_response(r)
+        status = CommonConnection.process_server_response(r)
         if status[0] == HTTPStatus.OK:
             return status[1]["APIKey"], status[1]["ValidUntil"]
         else:
