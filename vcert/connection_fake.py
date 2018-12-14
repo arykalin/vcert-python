@@ -1,5 +1,5 @@
 import uuid
-
+from .common import CommonConnection, Zone
 
 def fake_user(email=None):
     fake_user_email = email or "test@example.com"
@@ -37,7 +37,7 @@ def fake_zone(zone=None):
     return z
 
 
-class ConnectionFake():
+class ConnectionFake(CommonConnection):
     def __init__(self, *args, **kwargs):
         """
         todo: docs
@@ -53,26 +53,5 @@ class ConnectionFake():
         return fake_user(email)
 
     def get_zone_by_tag(self, tag):
-        return fake_zone(tag)
-
-    def request_cert(self, request, zone):
-        raise NotImplementedError
-
-    def retrieve_cert(self, request):
-        raise NotImplementedError
-
-    def revoke_cert(self, request):
-        raise NotImplementedError
-
-    def renew_cert(self, request):
-        raise NotImplementedError
-
-    def read_zone_conf(self):
-        raise NotImplementedError
-
-    def gen_request(self, zone_config, request):
-        raise NotImplementedError
-
-    def import_cert(self, request):
-        raise NotImplementedError
+        return Zone.from_server_response(fake_zone(tag))
 
