@@ -74,7 +74,7 @@ class TPPConnection(CommonConnection):
         return self.process_server_response(r)
 
     def _get_cert_status(self, request_id):
-        status, data = self._get(URLS.CERTIFICATE_STATUS % request_id)
+        status, data = self._post(URLS.CERTIFICATE_RETRIEVE % request_id)
         if status == HTTPStatus.OK:
             return data
 
@@ -112,13 +112,21 @@ class TPPConnection(CommonConnection):
         else:
             pass
 
-    def request_cert(self, request, zone):
+    def request_cert(self, csr, zone):
         """
         :param SigningRequest request:
         :param str zone:
         :return:
         """
-        request
+        status, data = self._post(URLS.CERTIFICATE_REQUESTS, data={"PKCS10": csr, "PolicyDN": r"\\\\VED\\\\Policy\\\\devops\\\\vcert",
+                                                                   "ObjectName":
+            "testPythonSDK", "DisableAutomaticRenewal": "true"})
+        if status == HTTPStatus.CREATED:
+            request = CertificateRequest.from_server_response(data['certificateRequests'][0])
+            return request.id
+        else:
+            log.debug(status)
+        # request
 
     def retrieve_cert(self, request):
         raise NotImplementedError
