@@ -17,8 +17,7 @@ class URLS:
     CERTIFICATE_IMPORT = "certificates/import"
 
 
-
-TOKEN_HEADER_NAME = "tppl-api-key"
+TOKEN_HEADER_NAME = "x-venafi-api-key"
 
 # todo: check stdlib
 MIME_JSON = "application/json"
@@ -43,16 +42,20 @@ class TPPConnection(CommonConnection):
         self._base_url = url
         self._user = user
         self._password = password
+        # todo: add timeout check, like self.token = ("token-string-dsfsfdsfdsfdsf", valid_to)
+        self.token = self.auth()
 
     def _get(self, url="", params=None):
         # todo: catch requests.exceptions
-        r = requests.get(self._base_url + url, headers={'content-type': 'application/json','cache-control':
+        r = requests.get(self._base_url + url, headers={TOKEN_HEADER_NAME: self.token, 'content-type':
+        'application/json','cache-control':
                 'no-cache'})
         return self._process_server_response(r)
 
     def _post(self, url, params=None, data=None):
         if isinstance(data, dict):
-            r = requests.post(self._base_url + url, headers={'content-type': 'application/json',"cache-control":
+            r = requests.post(self._base_url + url, headers={TOKEN_HEADER_NAME: self.token, 'content-type':
+                'application/json',"cache-control":
                 "no-cache"}, json=data)
         else:
             log.error("Unexpected client data type: %s for %s" % (type(data), url))
@@ -89,7 +92,7 @@ class TPPConnection(CommonConnection):
         return status == HTTPStatus.OK and "Ready" in data
 
     def auth(self):
-        status, data = self._get(URLS.AUTHORIZE)
+        status, data = self._post(URLS.AUTHORIZE)
         if status == HTTPStatus.OK:
             return data
 
