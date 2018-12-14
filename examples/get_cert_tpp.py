@@ -21,7 +21,7 @@ def main():
     if not status:
         print('Server offline')
         exit(1)
-    conn.auth()
+    # conn.auth()
     # zone = conn.get_zone_by_tag("default")
     # print("zone:", zone)
     # print(build_request("RU", "Moscow", "Moscow", "Venafi", "", "example.com"))

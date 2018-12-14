@@ -43,19 +43,20 @@ class TPPConnection(CommonConnection):
         self._user = user
         self._password = password
         # todo: add timeout check, like self.token = ("token-string-dsfsfdsfdsfdsf", valid_to)
-        self.token = self.auth()
+        self._token, self._token_timeout = self.auth()
+        log.debug("Token is %s, timeout is %s" % (self._token, self._token_timeout))
 
     def _get(self, url="", params=None):
         # todo: catch requests.exceptions
-        r = requests.get(self._base_url + url, headers={TOKEN_HEADER_NAME: self.token, 'content-type':
-        'application/json','cache-control':
+        r = requests.get(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token, 'content-type':
+        MIME_JSON,'cache-control':
                 'no-cache'})
         return self._process_server_response(r)
 
-    def _post(self, url, params=None, data=None):
+    def _post(self, url, params=None, data=None, token=None):
         if isinstance(data, dict):
-            r = requests.post(self._base_url + url, headers={TOKEN_HEADER_NAME: self.token, 'content-type':
-                'application/json',"cache-control":
+            r = requests.post(self._base_url + url, headers={TOKEN_HEADER_NAME: token, 'content-type':
+                MIME_JSON,"cache-control":
                 "no-cache"}, json=data)
         else:
             log.error("Unexpected client data type: %s for %s" % (type(data), url))
@@ -70,7 +71,8 @@ class TPPConnection(CommonConnection):
         if content_type == MINE_HTML:
             log.debug(r.text)
             return r.status_code, r.text
-        elif content_type == MIME_JSON:
+        # content-type in respons is  application/json; charset=utf-8
+        elif MIME_JSON in content_type:
             log.debug(r.content.decode())
             return r.status_code, r.json()
         else:
@@ -92,9 +94,9 @@ class TPPConnection(CommonConnection):
         return status == HTTPStatus.OK and "Ready" in data
 
     def auth(self):
-        status, data = self._post(URLS.AUTHORIZE)
+        status, data = self._post(URLS.AUTHORIZE, data={"Username": self._user, "Password": self._password})
         if status == HTTPStatus.OK:
-            return data
+            return data["APIKey"], data["ValidUntil"]
 
     def register(self):
         return None
