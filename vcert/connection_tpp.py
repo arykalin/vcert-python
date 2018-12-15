@@ -22,6 +22,7 @@ TOKEN_HEADER_NAME = "x-venafi-api-key"
 # todo: check stdlib
 MIME_JSON = "application/json"
 MINE_HTML = "text/html"
+MINE_TEXT = "text/plain"
 MINE_ANY = "*/*"
 
 
@@ -42,43 +43,38 @@ class TPPConnection(CommonConnection):
         self._base_url = url
         self._user = user
         self._password = password
+        self._token = False
         # todo: add timeout check, like self.token = ("token-string-dsfsfdsfdsfdsf", valid_to)
-        self.token = self.auth()
+
+
 
     def _get(self, url="", params=None):
         # todo: catch requests.exceptions
-        r = requests.get(self._base_url + url, headers={TOKEN_HEADER_NAME: self.token, 'content-type':
-        'application/json','cache-control':
+        if not self._token:
+            self._token = self.auth()
+            log.debug("Token is %s, timeout is %s" % (self._token[0], self._token[1]))
+
+        r = requests.get(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token[0], 'content-type':
+        MIME_JSON,'cache-control':
                 'no-cache'})
-        return self._process_server_response(r)
+        return self.process_server_response(r)
 
     def _post(self, url, params=None, data=None):
+        if not self._token:
+            self._token = self.auth()
+            log.debug("Token is %s, timeout is %s" % (self._token[0], self._token[1]))
+
         if isinstance(data, dict):
-            r = requests.post(self._base_url + url, headers={TOKEN_HEADER_NAME: self.token, 'content-type':
-                'application/json',"cache-control":
+            r = requests.post(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token[0], 'content-type':
+                MIME_JSON,"cache-control":
                 "no-cache"}, json=data)
         else:
             log.error("Unexpected client data type: %s for %s" % (type(data), url))
             raise ClientBadData
-        return self._process_server_response(r)
-
-    @staticmethod
-    def _process_server_response(r):
-        if r.status_code not in (HTTPStatus.OK, HTTPStatus.ACCEPTED):
-            raise ConnectionError("Server status: %s, %s", (r.status_code, r.request.url))
-        content_type = r.headers.get("content-type")
-        if content_type == MINE_HTML:
-            log.debug(r.text)
-            return r.status_code, r.text
-        elif content_type == MIME_JSON:
-            log.debug(r.content.decode())
-            return r.status_code, r.json()
-        else:
-            log.error("unexpected content type: %s for request %s" % (content_type, r.request.url))
-            raise ServerUnexptedBehavior
+        return self.process_server_response(r)
 
     def _get_cert_status(self, request_id):
-        status, data = self._get(URLS.CERTIFICATE_STATUS % request_id)
+        status, data = self._post(URLS.CERTIFICATE_RETRIEVE % request_id)
         if status == HTTPStatus.OK:
             return data
 
@@ -92,9 +88,17 @@ class TPPConnection(CommonConnection):
         return status == HTTPStatus.OK and "Ready" in data
 
     def auth(self):
-        status, data = self._post(URLS.AUTHORIZE)
-        if status == HTTPStatus.OK:
-            return data
+        data = {"Username": self._user, "Password": self._password}
+
+        r = requests.post(self._base_url + URLS.AUTHORIZE, headers={'content-type':
+            MIME_JSON, "cache-control": "no-cache"}, json=data)
+
+        status = self.process_server_response(r)
+        if status[0] == HTTPStatus.OK:
+            return status[1]["APIKey"], status[1]["ValidUntil"]
+        else:
+            log.error("Authentication status is not %s but %s. Exiting" % (HTTPStatus.OK, status[0]))
+            exit(1)
 
     def register(self):
         return None
@@ -108,13 +112,21 @@ class TPPConnection(CommonConnection):
         else:
             pass
 
-    def request_cert(self, request, zone):
+    def request_cert(self, csr, zone):
         """
         :param SigningRequest request:
         :param str zone:
         :return:
         """
-        request
+        status, data = self._post(URLS.CERTIFICATE_REQUESTS, data={"PKCS10": csr, "PolicyDN": r"\\\\VED\\\\Policy\\\\devops\\\\vcert",
+                                                                   "ObjectName":
+            "testPythonSDK", "DisableAutomaticRenewal": "true"})
+        if status == HTTPStatus.CREATED:
+            request = CertificateRequest.from_server_response(data['certificateRequests'][0])
+            return request.id
+        else:
+            log.debug(status)
+        # request
 
     def retrieve_cert(self, request):
         raise NotImplementedError

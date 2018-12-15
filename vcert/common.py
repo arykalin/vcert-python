@@ -5,6 +5,15 @@ import logging as log
 from oscrypto import asymmetric
 from csrbuilder import CSRBuilder, pem_armor_csr
 from pprint import pprint
+from http import HTTPStatus
+from .errors import ConnectionError, ServerUnexptedBehavior
+
+
+MIME_JSON = "application/json"
+MINE_HTML = "text/html"
+MINE_TEXT = "text/plain"
+MINE_ANY = "*/*"
+
 
 class CertStatuses:
     REQUESTED = 'REQUESTED'
@@ -246,3 +255,22 @@ class CommonConnection:
                 break
         log.info("Status: %s" % cert.status)
         return cert
+
+    @staticmethod
+    def process_server_response(r):
+        if r.status_code not in (HTTPStatus.OK, HTTPStatus.ACCEPTED):
+            raise ConnectionError("Server status: %s, %s\n Response: %s", (r.status_code, r.request.url, r._content))
+        content_type = r.headers.get("content-type")
+        if content_type == MINE_TEXT:
+            log.debug(r.text)
+            return r.status_code, r.text
+        elif content_type == MINE_HTML:
+            log.debug(r.text)
+            return r.status_code, r.text
+        # content-type in respons is  application/json; charset=utf-8
+        elif content_type.startswith(MIME_JSON):
+            log.debug(r.content.decode())
+            return r.status_code, r.json()
+        else:
+            log.error("unexpected content type: %s for request %s" % (content_type, r.request.url))
+            raise ServerUnexptedBehavior

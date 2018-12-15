@@ -52,7 +52,7 @@ class CloudConnection(CommonConnection):
     def _get(self, url, params=None):
         # todo: catch requests.exceptions
         r = requests.get(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token, "Accept": MINE_ANY})
-        return self._process_server_response(r)
+        return self.process_server_response(r)
 
     def _post(self, url, params=None, data=None):
         if isinstance(data, dict):
@@ -60,7 +60,7 @@ class CloudConnection(CommonConnection):
         else:
             log.error("Unexpected client data type: %s for %s" % (type(data), url))
             raise ClientBadData
-        return self._process_server_response(r)
+        return self.process_server_response(r)
 
     @staticmethod
     def _process_server_response(r):

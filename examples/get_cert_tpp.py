@@ -21,10 +21,9 @@ def main():
     if not status:
         print('Server offline')
         exit(1)
-    conn.auth()
-    # zone = conn.get_zone_by_tag("default")
-    # print("zone:", zone)
-    # print(build_request("RU", "Moscow", "Moscow", "Venafi", "", "example.com"))
+
+    csr = build_request("US", "Moscow", "Moscow", "Venafi", "", "rewrewrwer1.venafi.example.com")
+    pprint(conn.make_request_and_wait_certificate(csr, ZONE))
 
 if __name__ == '__main__':
     main()
