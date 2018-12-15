@@ -4,7 +4,7 @@ import time
 import logging as log
 from oscrypto import asymmetric
 from csrbuilder import CSRBuilder, pem_armor_csr
-
+from pprint import pprint
 
 class CertStatuses:
     REQUESTED = 'REQUESTED'
@@ -18,7 +18,7 @@ class CertField(str):
 
 
 class Zone:
-    def __init__(self, id, company_id, tag, zonetype, cert_policy_ids, default_cert_identity_policy, default_cert_user_policy, system_generated, creation_date):
+    def __init__(self, id, company_id, tag, zonetype, cert_policy_ids, default_cert_identity_policy, default_cert_use_policy, system_generated, creation_date):
         """
         :param str id:
         :param str company_id:
@@ -26,7 +26,7 @@ class Zone:
         :param str zonetype:
         :param cert_policy_ids:
         :param str default_cert_identity_policy:
-        :param str default_cert_user_policy:
+        :param str default_cert_use_policy:
         :param bool system_generated:
         :param datetime.datetime creation_date:
         """
@@ -36,7 +36,7 @@ class Zone:
         self.zonetype = zonetype
         self.cert_policy_ids = cert_policy_ids
         self.default_cert_identity_policy = default_cert_identity_policy
-        self.default_cert_user_policy = default_cert_user_policy
+        self.default_cert_use_policy = default_cert_use_policy
         self.system_generated = system_generated
         self.creation_date = creation_date
 
@@ -79,6 +79,62 @@ class ZoneConfig:
     @classmethod
     def from_server_response(cls, d):
         return cls()
+
+
+class Policy:
+    class Type:
+        CERTIFICATE_IDENTITY = "CERTIFICATE_IDENTITY"
+        CERTIFICATE_USE = "CERTIFICATE_USE"
+
+    def __init__(self, policy_type=None, id=None, company_id=None, name=None, system_generated=None, creation_date=None, cert_provider_id=None,
+                 SubjectCNRegexes=None, SubjectORegexes=None, SubjectOURegexes=None, SubjectSTRegexes=None, SubjectLRegexes=None,
+                 SubjectCRegexes=None, SANRegexes=None, KeyTypes=None, KeyReuse=None):
+        """
+        :param str policy_type:
+        :param str id:
+        :param str company_id:
+        :param str name:
+        :param bool ystem_generated:
+        :param datetime.datetime creation_date:
+        :param str cert_provider_id:
+        :param list[str] SubjectCNRegexes:
+        :param list[str] SubjectORegexes:
+        :param list[str] SubjectOURegexes:
+        :param list[str] SubjectSTRegexes:
+        :param list[str] SubjectLRegexes:
+        :param list[str] SubjectCRegexes:
+        :param list[str] SANRegexes:
+        :param KeyTypes:
+        :param bool KeyReuse:
+        """
+        self.policy_type = policy_type
+        self.id = id
+        self.company_id = company_id
+        self.name = name
+        self.system_generated = system_generated
+        self.creation_date = creation_date
+        self.cert_provider_id = cert_provider_id
+        self.SubjectCNRegexes = SubjectCNRegexes
+        self.SubjectORegexes = SubjectORegexes
+        self.SubjectOURegexes = SubjectOURegexes
+        self.SubjectSTRegexes = SubjectSTRegexes
+        self.SubjectLRegexes = SubjectLRegexes
+        self.SubjectCRegexes = SubjectCRegexes
+        self.SANRegexes = SANRegexes
+        self.KeyTypes = KeyTypes
+        self.KeyReuse = KeyReuse
+
+    @classmethod
+    def from_server_response(cls, d):
+        pprint(d)
+        return cls(d['certificatePolicyType'], d['id'], d['companyId'], d['name'], d['systemGenerated'],
+                   dateutil.parser.parse(d['creationDate']), d.get('certificateProviderId'),
+                   d.get('subjectCNRegexes', []), d.get('subjectORegexes', []), d.get('subjectOURegexes', []),
+                   d.get('subjectSTRegexes', []), d.get('subjectLRegexes', []), d.get('subjectCRegexes', []),
+                   d.get('sanRegexes', []), d.get('keyTypes'), d.get('keyReuse'))
+
+    def __repr__(self):
+        return "policy [%s] %s (%s)" % (self.policy_type, self.name, self.id)
 
 
 def build_request(country, province, locality, organization, organization_unit, common_name):
@@ -148,8 +204,8 @@ class CommonConnection:
 
     def request_cert(self, csr, zone):
         """
-        :param str csr:
-        :param str zone:
+        :param str csr: Certitficate in PEM format
+        :param str zone: Venafi zone tag name
         """
         raise NotImplementedError
 
@@ -162,7 +218,11 @@ class CommonConnection:
     def renew_cert(self, request):
         raise NotImplementedError
 
-    def read_zone_conf(self):
+    def read_zone_conf(self, tag):
+        """
+        :param str tag:
+        :rtype ZoneConfig
+        """
         raise NotImplementedError
 
     def gen_request(self, zone_config, request):

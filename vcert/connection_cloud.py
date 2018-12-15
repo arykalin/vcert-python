@@ -2,7 +2,7 @@ import requests
 import logging as log
 from http import HTTPStatus
 from .errors import ConnectionError, ServerUnexptedBehavior, ClientBadData
-from .common import Zone, CertificateRequest, Certificate, CommonConnection
+from .common import Zone, CertificateRequest, Certificate, CommonConnection, Policy
 
 
 class URLS:
@@ -83,8 +83,23 @@ class CloudConnection(CommonConnection):
             return Certificate.from_server_response(data)
 
     def _get_policy_by_ids(self, policy_ids):
+        policy = Policy()
         for policy_id in policy_ids:
             status, data = self._get(URLS.POLICIES_BY_ID % policy_id)
+            if status == HTTPStatus.OK:
+                p = Policy.from_server_response(data)
+                if p.policy_type == p.Type.CERTIFICATE_IDENTITY:  # todo: replace with somethin more pythonic
+                    policy.SubjectCNRegexes = p.SubjectCNRegexes
+                    policy.SubjectORegexes = p.SubjectORegexes
+                    policy.SubjectOURegexes = p.SubjectOURegexes
+                    policy.SubjectSTRegexes = p.SubjectSTRegexes
+                    policy.SubjectLRegexes = p.SubjectLRegexes
+                    policy.SubjectCRegexes = p.SubjectCRegexes
+                    policy.SANRegexes = p.SANRegexes
+                elif p.policy_type == p.Type.CERTIFICATE_USE:
+                    policy.KeyTypes = p.KeyTypes
+                    policy.KeyReuse = p.KeyReuse
+        return policy
 
     def ping(self):
         status, data = self._get(URLS.PING)
@@ -126,8 +141,10 @@ class CloudConnection(CommonConnection):
     def renew_cert(self, request):
         raise NotImplementedError
 
-    def read_zone_conf(self):
-        raise NotImplementedError
+    def read_zone_conf(self, tag):
+        z = self.get_zone_by_tag(tag)
+        policy = self._get_policy_by_ids((z.default_cert_identity_policy, z.default_cert_use_policy))
+
 
     def gen_request(self, zone_config, request):
         raise NotImplementedError
