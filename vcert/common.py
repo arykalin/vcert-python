@@ -177,6 +177,9 @@ class CertificateRequest:
     def from_server_response(cls, d):
         return cls(d['id'], d['status'])
 
+    @classmethod
+    def from_tpp_server_response(cls, d):
+        return cls(d['CertificateDN'], d['Guid'])
 
 class Certificate:
     def __init__(self, id, status):

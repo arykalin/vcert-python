@@ -1,7 +1,7 @@
 import requests
 import logging as log
 from http import HTTPStatus
-from .errors import ConnectionError, ServerUnexptedBehavior, ClientBadData
+from .errors import ConnectionError, ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError
 from .common import Zone, CertificateRequest, Certificate, CommonConnection
 
 class URLS:
@@ -98,7 +98,7 @@ class TPPConnection(CommonConnection):
             return status[1]["APIKey"], status[1]["ValidUntil"]
         else:
             log.error("Authentication status is not %s but %s. Exiting" % (HTTPStatus.OK, status[0]))
-            exit(1)
+            raise AuthenticationError
 
     def register(self):
         return None
@@ -121,11 +121,13 @@ class TPPConnection(CommonConnection):
         status, data = self._post(URLS.CERTIFICATE_REQUESTS, data={"PKCS10": csr, "PolicyDN": r"\\\\VED\\\\Policy\\\\devops\\\\vcert",
                                 "ObjectName": "rewrewrwer1.venafi.example.com", "DisableAutomaticRenewal": "true"})
         if status == HTTPStatus.OK:
-            log.debug("Certificate sucessfully requested with request id %s." % data['CertificateDN'])
-            return data['CertificateDN']
+            request = CertificateRequest.from_tpp_server_response(data)
+            log.debug("Certificate sucessfully requested with request id %s." % request.id)
+            return request.id
         else:
-            log.debug("Request status is not %s. %s." % HTTPStatus.OK, status)
-        # request
+            log.error("Request status is not %s. %s." % HTTPStatus.OK, status)
+            raise CertificateRequestError
+
 
     def retrieve_cert(self, request):
         raise NotImplementedError

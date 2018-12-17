@@ -7,3 +7,9 @@ class ServerUnexptedBehavior(Exception):
 
 class ClientBadData(Exception):
     pass
+
+class CertificateRequestError(Exception):
+    pass
+
+class AuthenticationError(Exception):
+    pass
