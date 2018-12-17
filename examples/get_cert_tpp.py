@@ -16,11 +16,6 @@ ZONE = (environ['TPPZONE'])
 
 
 def main():
-    c = common.CertRequest
-    c.FriendlyName = "fdfdfd"
-    c.CSR = "fdfdf"
-    print(c.__dict__['CSR'])
-
     print("Tring to ping url",URL)
     conn = TPPConnection(USER,PASSWORD,URL)
     status = conn.ping()
