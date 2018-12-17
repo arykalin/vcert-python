@@ -119,13 +119,12 @@ class TPPConnection(CommonConnection):
         :return:
         """
         status, data = self._post(URLS.CERTIFICATE_REQUESTS, data={"PKCS10": csr, "PolicyDN": r"\\\\VED\\\\Policy\\\\devops\\\\vcert",
-                                                                   "ObjectName":
-            "testPythonSDK", "DisableAutomaticRenewal": "true"})
-        if status == HTTPStatus.CREATED:
-            request = CertificateRequest.from_server_response(data['certificateRequests'][0])
-            return request.id
+                                "ObjectName": "rewrewrwer1.venafi.example.com", "DisableAutomaticRenewal": "true"})
+        if status == HTTPStatus.OK:
+            log.debug("Certificate sucessfully requested with request id %s." % data['CertificateDN'])
+            return data['CertificateDN']
         else:
-            log.debug(status)
+            log.debug("Request status is not %s. %s." % HTTPStatus.OK, status)
         # request
 
     def retrieve_cert(self, request):
