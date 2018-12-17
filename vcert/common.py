@@ -14,11 +14,11 @@ MINE_ANY = "*/*"
 
 
 class CertRequest:
-    def __init__(self, csr=None, friendly_name=None, PickupID=None, ChainOption=None):
+    def __init__(self, csr=None, friendly_name=None, pickup_id=None, chain_option=None):
         self.csr = csr
         self.friendly_name = friendly_name
-        self.PickupID = PickupID
-        self.ChainOption = ChainOption
+        self.pickup_id = pickup_id
+        self.chain_option = chain_option
 
 
 
