@@ -190,7 +190,7 @@ class CommonConnection:
         """
         raise NotImplementedError
 
-    def build_request(country, province, locality, organization, organization_unit, common_name):
+    def build_request(self, country, province, locality, organization, organization_unit, common_name):
         """
         :param str csr: Certitficate in PEM format
         :param str zone: Venafi zone tag name

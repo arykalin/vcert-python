@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from vcert import TPPConnection
-from vcert.common import build_request
 from pprint import pprint
 from os import environ
 import logging
@@ -26,10 +25,11 @@ def main():
     req = {
 
     }
-    request = build_request("US", "Moscow", "Moscow", "Venafi", "", randomword(10)+".venafi.example.com")
-    request_id = conn.request_cert(request)
-    cert = conn.retrieve_cert(cert)
-    pprint(conn.make_request_and_wait_certificate(request, ZONE))
+    request = conn.build_request("US", "Moscow", "Moscow", "Venafi", "", randomword(10)+".venafi.example.com")
+    request_id = conn.request_cert(request, ZONE)
+    cert = conn.retrieve_cert(request_id)
+    pprint(cert)
+    # pprint(conn.make_request_and_wait_certificate(request, ZONE))
 
 def randomword(length):
    letters = string.ascii_lowercase

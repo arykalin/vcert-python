@@ -110,7 +110,7 @@ class TPPConnection(CommonConnection):
             log.error("Authentication status is not %s but %s. Exiting" % (HTTPStatus.OK, status[0]))
             raise AuthenticationError
 
-    def build_request(country, province, locality, organization, organization_unit, common_name):
+    def build_request(self, country, province, locality, organization, organization_unit, common_name):
         public_key, private_key = asymmetric.generate_pair('rsa', bit_size=2048)
 
         data = {
@@ -128,8 +128,10 @@ class TPPConnection(CommonConnection):
         )
         builder.hash_algo = "sha256"
         builder.subject_alt_domains = [common_name]
-        request = builder.build(private_key)
-        return pem_armor_csr(request)
+        csr = builder.build(private_key)
+        csr = pem_armor_csr(csr)
+        request = dict(friendly_name=common_name,csr=csr)
+        return request
 
     def request_cert(self, request, zone):
         """
@@ -139,7 +141,7 @@ class TPPConnection(CommonConnection):
         """
         status, data = self._post(URLS.CERTIFICATE_REQUESTS,
                                   data={"PKCS10": request['csr'], "PolicyDN": r"\\\\VED\\\\Policy\\\\devops\\\\vcert",
-                                        "ObjectName": "rewrewrwer1.venafi.example.com",
+                                        "ObjectName": request['friendly_name'],
                                         "DisableAutomaticRenewal": "true"})
         if status == HTTPStatus.OK:
             request = CertificateRequest.from_tpp_server_response(data)

@@ -154,7 +154,7 @@ class CloudConnection(CommonConnection):
     def import_cert(self, request):
         raise NotImplementedError
 
-    def build_request(country, province, locality, organization, organization_unit, common_name):
+    def build_request(self, country, province, locality, organization, organization_unit, common_name):
         public_key, private_key = asymmetric.generate_pair('rsa', bit_size=2048)
 
         data = {
