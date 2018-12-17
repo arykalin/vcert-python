@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import time
 from vcert import TPPConnection
+from vcert import common
 from pprint import pprint
 from os import environ
 import logging
@@ -15,6 +16,11 @@ ZONE = (environ['TPPZONE'])
 
 
 def main():
+    c = common.CertRequest
+    c.FriendlyName = "fdfdfd"
+    c.CSR = "fdfdf"
+    print(c.__dict__['CSR'])
+
     print("Tring to ping url",URL)
     conn = TPPConnection(USER,PASSWORD,URL)
     status = conn.ping()
@@ -28,10 +34,10 @@ def main():
     request_id = conn.request_cert(request, ZONE)
     while True:
         cert = conn.retrieve_cert(request_id)
-        if cert == 'Pending':
-            time.sleep(5)
-        else:
+        if cert:
             break
+        else:
+            time.sleep(5)
     pprint(cert)
 
 

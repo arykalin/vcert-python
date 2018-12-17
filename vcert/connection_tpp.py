@@ -4,7 +4,7 @@ from csrbuilder import CSRBuilder, pem_armor_csr
 import logging as log
 from http import HTTPStatus
 from .errors import ConnectionError, ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError
-from .common import Zone, CertificateRequest, Certificate, CommonConnection
+from .common import Zone, CertificateRequest, Certificate, CommonConnection, CertStatuses, CertRequest
 
 
 class URLS:
@@ -119,7 +119,8 @@ class TPPConnection(CommonConnection):
         builder.subject_alt_domains = [common_name]
         csr = builder.build(private_key)
         csr = pem_armor_csr(csr)
-        request = dict(friendly_name=common_name,csr=csr)
+        # request = dict(friendly_name=common_name,csr=csr)
+        request = CertRequest(csr=csr, friendly_name=common_name)
         return request
 
     def request_cert(self, request, zone):
@@ -129,8 +130,9 @@ class TPPConnection(CommonConnection):
         :return:
         """
         status, data = self._post(URLS.CERTIFICATE_REQUESTS,
-                                  data={"PKCS10": request['csr'], "PolicyDN": r"\\\\VED\\\\Policy\\\\devops\\\\vcert",
-                                        "ObjectName": request['friendly_name'],
+                                  data={"PKCS10": request.__dict__['csr'], "PolicyDN":
+                                      r"\\\\VED\\\\Policy\\\\devops\\\\vcert",
+                                        "ObjectName": request.__dict__['friendly_name'],
                                         "DisableAutomaticRenewal": "true"})
         if status == HTTPStatus.OK:
             request = CertificateRequest.from_tpp_server_response(data)
@@ -151,8 +153,8 @@ class TPPConnection(CommonConnection):
         if status == HTTPStatus.OK:
             return data
         elif status == HTTPStatus.ACCEPTED:
-            log.debug("Certificate is not processed yet. Status is %s" % data['Status'])
-            return "Pending"
+            log.debug(data['Status'])
+            return None
         else:
             log.error("Status is not %s. %s" % HTTPStatus.OK, status)
             raise ServerUnexptedBehavior
