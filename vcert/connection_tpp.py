@@ -4,6 +4,7 @@ from http import HTTPStatus
 from .errors import ConnectionError, ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError
 from .common import Zone, CertificateRequest, Certificate, CommonConnection
 
+
 class URLS:
     API_BASE_URL = ""
 
@@ -32,7 +33,7 @@ def log_errors(data):
         log.error("Unknown error format: %s", data)
         return
     for e in data["errors"]:
-        log.error(str(e))  #todo: beta formatter
+        log.error(str(e))  # todo: beta formatter
 
 
 class TPPConnection(CommonConnection):
@@ -46,8 +47,6 @@ class TPPConnection(CommonConnection):
         self._token = False
         # todo: add timeout check, like self.token = ("token-string-dsfsfdsfdsfdsf", valid_to)
 
-
-
     def _get(self, url="", params=None):
         # todo: catch requests.exceptions
         if not self._token:
@@ -55,8 +54,8 @@ class TPPConnection(CommonConnection):
             log.debug("Token is %s, timeout is %s" % (self._token[0], self._token[1]))
 
         r = requests.get(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token[0], 'content-type':
-        MIME_JSON,'cache-control':
-                'no-cache'})
+            MIME_JSON, 'cache-control':
+                                                            'no-cache'})
         return self.process_server_response(r)
 
     def _post(self, url, params=None, data=None):
@@ -66,22 +65,30 @@ class TPPConnection(CommonConnection):
 
         if isinstance(data, dict):
             r = requests.post(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token[0], 'content-type':
-                MIME_JSON,"cache-control":
-                "no-cache"}, json=data)
+                MIME_JSON, "cache-control":
+                                                                 "no-cache"}, json=data)
         else:
             log.error("Unexpected client data type: %s for %s" % (type(data), url))
             raise ClientBadData
         return self.process_server_response(r)
 
     def _get_cert_status(self, request_id):
-        status, data = self._post(URLS.CERTIFICATE_RETRIEVE % request_id)
+        log.debug("Getting certificate status for id %s" % request_id)
+        status, data = self._post(URLS.CERTIFICATE_RETRIEVE, data={
+            'CertificateDN': request_id,
+            'Format': "base64",
+            'RootFirstOrder': 'ChainOptionIgnore',
+            'IncludeChain': 'true',
+        })
         if status == HTTPStatus.OK:
             return data
+        else:
+            log.error("Status is not %s. %s" % HTTPStatus.OK, status)
+            raise ServerUnexptedBehavior
 
     def _get_policy_by_ids(self, policy_ids):
         for policy_id in policy_ids:
             status, data = self._get(URLS.POLICIES_BY_ID % policy_id)
-
 
     def ping(self):
         status, data = self._get()
@@ -91,7 +98,8 @@ class TPPConnection(CommonConnection):
         data = {"Username": self._user, "Password": self._password}
 
         r = requests.post(self._base_url + URLS.AUTHORIZE, headers={'content-type':
-            MIME_JSON, "cache-control": "no-cache"}, json=data)
+                                                                        MIME_JSON, "cache-control": "no-cache"},
+                          json=data)
 
         status = self.process_server_response(r)
         if status[0] == HTTPStatus.OK:
@@ -118,8 +126,10 @@ class TPPConnection(CommonConnection):
         :param str zone:
         :return:
         """
-        status, data = self._post(URLS.CERTIFICATE_REQUESTS, data={"PKCS10": csr, "PolicyDN": r"\\\\VED\\\\Policy\\\\devops\\\\vcert",
-                                "ObjectName": "rewrewrwer1.venafi.example.com", "DisableAutomaticRenewal": "true"})
+        status, data = self._post(URLS.CERTIFICATE_REQUESTS,
+                                  data={"PKCS10": csr, "PolicyDN": r"\\\\VED\\\\Policy\\\\devops\\\\vcert",
+                                        "ObjectName": "rewrewrwer1.venafi.example.com",
+                                        "DisableAutomaticRenewal": "true"})
         if status == HTTPStatus.OK:
             request = CertificateRequest.from_tpp_server_response(data)
             log.debug("Certificate sucessfully requested with request id %s." % request.id)
@@ -127,7 +137,6 @@ class TPPConnection(CommonConnection):
         else:
             log.error("Request status is not %s. %s." % HTTPStatus.OK, status)
             raise CertificateRequestError
-
 
     def retrieve_cert(self, request):
         raise NotImplementedError
