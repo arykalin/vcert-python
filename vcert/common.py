@@ -204,7 +204,7 @@ class CommonConnection:
         """
         raise NotImplementedError
 
-    def retrieve_cert(self, request):
+    def retrieve_cert(self, request_id):
         raise NotImplementedError
 
     def revoke_cert(self, request):

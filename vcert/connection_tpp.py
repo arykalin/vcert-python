@@ -75,18 +75,7 @@ class TPPConnection(CommonConnection):
         return self.process_server_response(r)
 
     def _get_cert_status(self, request_id):
-        log.debug("Getting certificate status for id %s" % request_id)
-        status, data = self._post(URLS.CERTIFICATE_RETRIEVE, data={
-            'CertificateDN': request_id,
-            'Format': "base64",
-            'RootFirstOrder': 'true',
-            'IncludeChain': 'true',
-        })
-        if status == HTTPStatus.OK:
-            return data
-        else:
-            log.error("Status is not %s. %s" % HTTPStatus.OK, status)
-            raise ServerUnexptedBehavior
+        raise NotImplementedError
 
     def _get_policy_by_ids(self, policy_ids):
         for policy_id in policy_ids:
@@ -151,8 +140,22 @@ class TPPConnection(CommonConnection):
             log.error("Request status is not %s. %s." % HTTPStatus.OK, status)
             raise CertificateRequestError
 
-    def retrieve_cert(self, request):
-        raise NotImplementedError
+    def retrieve_cert(self, request_id):
+        log.debug("Getting certificate status for id %s" % request_id)
+        status, data = self._post(URLS.CERTIFICATE_RETRIEVE, data={
+            'CertificateDN': request_id,
+            'Format': "base64",
+            'RootFirstOrder': 'true',
+            'IncludeChain': 'true',
+        })
+        if status == HTTPStatus.OK:
+            return data
+        elif status == HTTPStatus.ACCEPTED:
+            log.debug("Certificate is not processed yet. Status is %s" % data['Status'])
+            return "Pending"
+        else:
+            log.error("Status is not %s. %s" % HTTPStatus.OK, status)
+            raise ServerUnexptedBehavior
 
     def revoke_cert(self, request):
         raise NotImplementedError

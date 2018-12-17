@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import time
 from vcert import TPPConnection
 from pprint import pprint
 from os import environ
@@ -27,7 +28,12 @@ def main():
     }
     request = conn.build_request("US", "Moscow", "Moscow", "Venafi", "", randomword(10)+".venafi.example.com")
     request_id = conn.request_cert(request, ZONE)
-    cert = conn.retrieve_cert(request_id)
+    while True:
+        cert = conn.retrieve_cert(request_id)
+        if cert == 'Pending':
+            time.sleep(5)
+        else:
+            break
     pprint(cert)
     # pprint(conn.make_request_and_wait_certificate(request, ZONE))
 
