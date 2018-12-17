@@ -23,9 +23,7 @@ def main():
         print('Server offline')
         exit(1)
 
-    req = {
 
-    }
     request = conn.build_request("US", "Moscow", "Moscow", "Venafi", "", randomword(10)+".venafi.example.com")
     request_id = conn.request_cert(request, ZONE)
     while True:
@@ -35,7 +33,7 @@ def main():
         else:
             break
     pprint(cert)
-    # pprint(conn.make_request_and_wait_certificate(request, ZONE))
+
 
 def randomword(length):
    letters = string.ascii_lowercase
