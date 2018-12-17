@@ -1,4 +1,6 @@
 import requests
+from oscrypto import asymmetric
+from csrbuilder import CSRBuilder, pem_armor_csr
 import logging as log
 from http import HTTPStatus
 from .errors import ConnectionError, ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError
@@ -77,7 +79,7 @@ class TPPConnection(CommonConnection):
         status, data = self._post(URLS.CERTIFICATE_RETRIEVE, data={
             'CertificateDN': request_id,
             'Format': "base64",
-            'RootFirstOrder': 'ChainOptionIgnore',
+            'RootFirstOrder': 'true',
             'IncludeChain': 'true',
         })
         if status == HTTPStatus.OK:
@@ -108,26 +110,35 @@ class TPPConnection(CommonConnection):
             log.error("Authentication status is not %s but %s. Exiting" % (HTTPStatus.OK, status[0]))
             raise AuthenticationError
 
-    def register(self):
-        return None
+    def build_request(country, province, locality, organization, organization_unit, common_name):
+        public_key, private_key = asymmetric.generate_pair('rsa', bit_size=2048)
 
-    def get_zone_by_tag(self, tag):
-        status, data = self._get(URLS.ZONE_BY_TAG % tag)
-        if status == HTTPStatus.OK:
-            return Zone.from_server_response(data)
-        elif status in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND, HTTPStatus.PRECONDITION_FAILED):
-            log_errors(data)
-        else:
-            pass
+        data = {
+            'country_name': country,
+            'state_or_province_name': province,
+            'locality_name': locality,
+            'organization_name': organization,
+            'common_name': common_name,
+        }
+        if organization_unit:
+            data['organizational_unit_name'] = organization_unit
+        builder = CSRBuilder(
+            data,
+            public_key
+        )
+        builder.hash_algo = "sha256"
+        builder.subject_alt_domains = [common_name]
+        request = builder.build(private_key)
+        return pem_armor_csr(request)
 
-    def request_cert(self, csr, zone):
+    def request_cert(self, request, zone):
         """
         :param SigningRequest request:
         :param str zone:
         :return:
         """
         status, data = self._post(URLS.CERTIFICATE_REQUESTS,
-                                  data={"PKCS10": csr, "PolicyDN": r"\\\\VED\\\\Policy\\\\devops\\\\vcert",
+                                  data={"PKCS10": request['csr'], "PolicyDN": r"\\\\VED\\\\Policy\\\\devops\\\\vcert",
                                         "ObjectName": "rewrewrwer1.venafi.example.com",
                                         "DisableAutomaticRenewal": "true"})
         if status == HTTPStatus.OK:

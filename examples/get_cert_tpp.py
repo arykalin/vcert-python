@@ -4,6 +4,7 @@ from vcert.common import build_request
 from pprint import pprint
 from os import environ
 import logging
+import random, string
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -22,8 +23,17 @@ def main():
         print('Server offline')
         exit(1)
 
-    csr = build_request("US", "Moscow", "Moscow", "Venafi", "", "rewrewrwer1.venafi.example.com")
-    pprint(conn.make_request_and_wait_certificate(csr, ZONE))
+    req = {
+
+    }
+    request = build_request("US", "Moscow", "Moscow", "Venafi", "", randomword(10)+".venafi.example.com")
+    request_id = conn.request_cert(request)
+    cert = conn.retrieve_cert(cert)
+    pprint(conn.make_request_and_wait_certificate(request, ZONE))
+
+def randomword(length):
+   letters = string.ascii_lowercase
+   return ''.join(random.choice(letters) for i in range(length))
 
 if __name__ == '__main__':
     main()

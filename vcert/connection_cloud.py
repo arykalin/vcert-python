@@ -1,6 +1,8 @@
 import requests
 import logging as log
 from http import HTTPStatus
+from oscrypto import asymmetric
+from csrbuilder import CSRBuilder, pem_armor_csr
 from .errors import ConnectionError, ServerUnexptedBehavior, ClientBadData
 from .common import Zone, CertificateRequest, Certificate, CommonConnection, Policy
 
@@ -151,3 +153,24 @@ class CloudConnection(CommonConnection):
 
     def import_cert(self, request):
         raise NotImplementedError
+
+    def build_request(country, province, locality, organization, organization_unit, common_name):
+        public_key, private_key = asymmetric.generate_pair('rsa', bit_size=2048)
+
+        data = {
+            'country_name': country,
+            'state_or_province_name': province,
+            'locality_name': locality,
+            'organization_name': organization,
+            'common_name': common_name,
+        }
+        if organization_unit:
+            data['organizational_unit_name'] = organization_unit
+        builder = CSRBuilder(
+            data,
+            public_key
+        )
+        builder.hash_algo = "sha256"
+        builder.subject_alt_domains = [common_name]
+        request = builder.build(private_key)
+        return pem_armor_csr(request)
