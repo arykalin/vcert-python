@@ -236,8 +236,8 @@ class CertificateRequest:
         return cls(d['id'], d['status'])
 
     @classmethod
-    def from_tpp_server_response(cls, d):
-        return cls(d['CertificateDN'], d['Guid'])
+    def from_tpp_server_response(self):
+        return dict(id=['CertificateDN'], guid=['gf'])
 
     def build_request(self):
         public_key, private_key = asymmetric.generate_pair('rsa', bit_size=2048)
@@ -259,9 +259,14 @@ class CertificateRequest:
         builder.subject_alt_domains = [self.common_name]
         csr = builder.build(private_key)
         csr = pem_armor_csr(csr)
-        # request = dict(friendly_name=common_name,csr=csr)
-        # request =
-        return CertificateRequest(csr=csr, friendly_name=self.common_name)
+
+        if self.chain_option == "last":
+            self.chain_option = "RootFirstOrder=false"
+        elif self.chain_option == "first":
+            self.chain_option = "RootFirstOrder=true"
+        else:
+            self.chain_option = None
+        return CertificateRequest(csr=csr, friendly_name=self.common_name, chain_option=self.chain_option)
 
 
 class Certificate:

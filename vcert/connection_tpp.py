@@ -2,8 +2,9 @@ import requests
 import logging as log
 import base64
 from http import HTTPStatus
-from .errors import VenafiConnectionError, ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError
-from .common import Zone, CertificateRequest, Certificate, CommonConnection, CertStatuses
+from .errors import ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError
+from .common import CommonConnection
+
 
 class URLS:
     API_BASE_URL = ""
@@ -99,32 +100,31 @@ class TPPConnection(CommonConnection):
             log.error("Authentication status is not %s but %s. Exiting" % (HTTPStatus.OK, status[0]))
             raise AuthenticationError
 
-    def request_cert(self, CertificateRequest, zone):
+    def request_cert(self, certificate_request, zone):
         """
         :param SigningRequest request:
         :param str zone:
         :return:
         """
         status, data = self._post(URLS.CERTIFICATE_REQUESTS,
-                                  data={"PKCS10": CertificateRequest.csr, "PolicyDN": self._get_policy_dn(zone),
-                                        "ObjectName": CertificateRequest.friendly_name,
+                                  data={"PKCS10": certificate_request.csr, "PolicyDN": self._get_policy_dn(zone),
+                                        "ObjectName": certificate_request.friendly_name,
                                         "DisableAutomaticRenewal": "true"})
         if status == HTTPStatus.OK:
-            request = CertificateRequest.from_tpp_server_response(data)
-            log.debug("Certificate sucessfully requested with request id %s." % request.id)
-            return request.id
+            certificate_request.id = data['CertificateDN']
+            log.debug("Certificate sucessfully requested with request id %s." % certificate_request.id)
+            return certificate_request
         else:
             log.error("Request status is not %s. %s." % HTTPStatus.OK, status)
             raise CertificateRequestError
 
-    def retrieve_cert(self, request_id):
-        log.debug("Getting certificate status for id %s" % request_id)
-        status, data = self._post(URLS.CERTIFICATE_RETRIEVE, data={
-            'CertificateDN': request_id,
-            'Format': "base64",
-            'RootFirstOrder': 'true',
-            'IncludeChain': 'true',
-        })
+    def retrieve_cert(self, certificate_request):
+        log.debug("Getting certificate status for id %s" % certificate_request.id)
+
+        retrive_request = dict(CertificateDN=certificate_request.id, Format="base64", IncludeChain='true')
+        retrive_request['RootFirstOrder'] = 'false'
+
+        status, data = self._post(URLS.CERTIFICATE_RETRIEVE, data=retrive_request)
         if status == HTTPStatus.OK:
             pem64 = data['CertificateData']
             pem = base64.b64decode(pem64)
@@ -154,4 +154,4 @@ class TPPConnection(CommonConnection):
     def _get_policy_dn(self, zone):
         # TODO: add regex here to check if VED\\Policy already in zone.
         # TODO: check and fix number of backslash in zone. Should be \\\\
-        return r"\\\\VED\\\\Policy\\\\"+zone
+        return r"\\\\VED\\\\Policy\\\\" + zone
