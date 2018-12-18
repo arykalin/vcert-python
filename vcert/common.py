@@ -2,6 +2,8 @@ import datetime
 import dateutil.parser
 import time
 import logging as log
+from oscrypto import asymmetric
+from csrbuilder import CSRBuilder, pem_armor_csr
 from pprint import pprint
 from http import HTTPStatus
 from .errors import VenafiConnectionError, ServerUnexptedBehavior, BadData
@@ -10,45 +12,6 @@ MIME_JSON = "application/json"
 MINE_HTML = "text/html"
 MINE_TEXT = "text/plain"
 MINE_ANY = "*/*"
-
-
-# class CertRequest:
-#     def __init__(self, subject=None,
-#                  dns_names=None,
-#                  email_addresses=None,
-#                  ip_addresses=None,
-#                  attributes=None,
-#                  signature_algorithm=None,
-#                  public_key_algorithm=None,
-#                  key_type=None,
-#                  key_length=None,
-#                  key_curve=None,
-#                  private_key=None,
-#                  csr_origin=None,
-#                  key_password=None,
-#                  csr=None,
-#                  friendly_name=None,
-#                  chain_option=None):
-#         self.csr = csr
-#         self.friendly_name = friendly_name
-#         self.chain_option = chain_option
-#         self.subject = subject
-#         self.dns_names = dns_names
-#         self.email_addresses = email_addresses
-#         self.ip_addresses = ip_addresses
-#         self.attributes = attributes
-#         self.signature_algorithm = signature_algorithm
-#         self.public_key_algorithm = public_key_algorithm
-#         self.key_type = key_type
-#         self.key_length = key_length
-#         self.key_curve = key_curve
-#         self.private_key = private_key
-#         self.csr_origin = csr_origin
-#         self.key_password = key_password
-#         self.csr = csr
-#         self.friendly_name = friendly_name
-#         self.chain_option = chain_option
-#
 
 class CertStatuses:
     REQUESTED = 'REQUESTED'
@@ -232,7 +195,13 @@ class CertificateRequest:
                  key_password=None,
                  csr=None,
                  friendly_name=None,
-                 chain_option=None):
+                 chain_option=None,
+                 country=None,
+                 province=None,
+                 locality=None,
+                 organization=None,
+                 organization_unit=None,
+                 common_name=None):
 
         self.csr = csr
         self.friendly_name = friendly_name
@@ -255,6 +224,12 @@ class CertificateRequest:
         self.chain_option = chain_option
         self.id = id
         self.status = status
+        self.country = country
+        self.province = province
+        self.locality = locality
+        self.organization = organization
+        self.organization_unit = organization_unit
+        self.common_name = common_name
 
     @classmethod
     def from_server_response(cls, d):
@@ -263,6 +238,30 @@ class CertificateRequest:
     @classmethod
     def from_tpp_server_response(cls, d):
         return cls(d['CertificateDN'], d['Guid'])
+
+    def build_request(self):
+        public_key, private_key = asymmetric.generate_pair('rsa', bit_size=2048)
+
+        data = {
+            'country_name': self.country,
+            'state_or_province_name': self.province,
+            'locality_name': self.locality,
+            'organization_name': self.organization,
+            'common_name': self.common_name,
+        }
+        if self.organization_unit:
+            data['organizational_unit_name'] = self.organization_unit
+        builder = CSRBuilder(
+            data,
+            public_key
+        )
+        builder.hash_algo = "sha256"
+        builder.subject_alt_domains = [self.common_name]
+        csr = builder.build(private_key)
+        csr = pem_armor_csr(csr)
+        # request = dict(friendly_name=common_name,csr=csr)
+        # request =
+        return CertificateRequest(csr=csr, friendly_name=self.common_name)
 
 
 class Certificate:

@@ -25,11 +25,13 @@ def main():
         exit(1)
 
 
-    request = conn.build_request(country="US", province="Moscow",
+    request = common.CertificateRequest(country="US", province="Moscow",
                                  locality="Moscow",
                                  organization="Venafi",
                                  organization_unit="",
-                                 common_name=randomword(10)+".venafi.example.com")
+                                 common_name=randomword(10)+".venafi.example.com",
+                                 chain_option="last"
+                                 ).build_request()
 
     request_id = conn.request_cert(request, ZONE)
     while True:

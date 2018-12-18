@@ -1,11 +1,9 @@
 import requests
-from oscrypto import asymmetric
-from csrbuilder import CSRBuilder, pem_armor_csr
 import logging as log
 import base64
 from http import HTTPStatus
 from .errors import VenafiConnectionError, ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError
-from .common import Zone, CertificateRequest, Certificate, CommonConnection, CertStatuses, CertRequest
+from .common import Zone, CertificateRequest, Certificate, CommonConnection, CertStatuses
 
 class URLS:
     API_BASE_URL = ""
@@ -101,30 +99,6 @@ class TPPConnection(CommonConnection):
             log.error("Authentication status is not %s but %s. Exiting" % (HTTPStatus.OK, status[0]))
             raise AuthenticationError
 
-    def build_request(self, country, province, locality, organization, organization_unit, common_name):
-        public_key, private_key = asymmetric.generate_pair('rsa', bit_size=2048)
-
-        data = {
-            'country_name': country,
-            'state_or_province_name': province,
-            'locality_name': locality,
-            'organization_name': organization,
-            'common_name': common_name,
-        }
-        if organization_unit:
-            data['organizational_unit_name'] = organization_unit
-        builder = CSRBuilder(
-            data,
-            public_key
-        )
-        builder.hash_algo = "sha256"
-        builder.subject_alt_domains = [common_name]
-        csr = builder.build(private_key)
-        csr = pem_armor_csr(csr)
-        # request = dict(friendly_name=common_name,csr=csr)
-        # request =
-        return CertificateRequest(csr=csr, friendly_name=common_name)
-
     def request_cert(self, CertificateRequest, zone):
         """
         :param SigningRequest request:
@@ -168,7 +142,7 @@ class TPPConnection(CommonConnection):
     def renew_cert(self, request):
         raise NotImplementedError
 
-    def read_zone_conf(self):
+    def read_zone_conf(self, tag):
         raise NotImplementedError
 
     def gen_request(self, zone_config, request):
