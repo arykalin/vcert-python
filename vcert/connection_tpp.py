@@ -122,18 +122,18 @@ class TPPConnection(CommonConnection):
         csr = builder.build(private_key)
         csr = pem_armor_csr(csr)
         # request = dict(friendly_name=common_name,csr=csr)
-        request = CertRequest(csr=csr, friendly_name=common_name)
-        return request
+        # request =
+        return CertificateRequest(csr=csr, friendly_name=common_name)
 
-    def request_cert(self, request, zone):
+    def request_cert(self, CertificateRequest, zone):
         """
         :param SigningRequest request:
         :param str zone:
         :return:
         """
         status, data = self._post(URLS.CERTIFICATE_REQUESTS,
-                                  data={"PKCS10": request.csr, "PolicyDN": self._get_policy_dn(zone),
-                                        "ObjectName": request.friendly_name,
+                                  data={"PKCS10": CertificateRequest.csr, "PolicyDN": self._get_policy_dn(zone),
+                                        "ObjectName": CertificateRequest.friendly_name,
                                         "DisableAutomaticRenewal": "true"})
         if status == HTTPStatus.OK:
             request = CertificateRequest.from_tpp_server_response(data)

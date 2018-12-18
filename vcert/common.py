@@ -12,43 +12,43 @@ MINE_TEXT = "text/plain"
 MINE_ANY = "*/*"
 
 
-class CertRequest:
-    def __init__(self, subject=None,
-                 dns_names=None,
-                 email_addresses=None,
-                 ip_addresses=None,
-                 attributes=None,
-                 signature_algorithm=None,
-                 public_key_algorithm=None,
-                 key_type=None,
-                 key_length=None,
-                 key_curve=None,
-                 private_key=None,
-                 csr_origin=None,
-                 key_password=None,
-                 csr=None,
-                 friendly_name=None,
-                 chain_option=None):
-        self.csr = csr
-        self.friendly_name = friendly_name
-        self.chain_option = chain_option
-        self.subject = subject
-        self.dns_names = dns_names
-        self.email_addresses = email_addresses
-        self.ip_addresses = ip_addresses
-        self.attributes = attributes
-        self.signature_algorithm = signature_algorithm
-        self.public_key_algorithm = public_key_algorithm
-        self.key_type = key_type
-        self.key_length = key_length
-        self.key_curve = key_curve
-        self.private_key = private_key
-        self.csr_origin = csr_origin
-        self.key_password = key_password
-        self.csr = csr
-        self.friendly_name = friendly_name
-        self.chain_option = chain_option
-
+# class CertRequest:
+#     def __init__(self, subject=None,
+#                  dns_names=None,
+#                  email_addresses=None,
+#                  ip_addresses=None,
+#                  attributes=None,
+#                  signature_algorithm=None,
+#                  public_key_algorithm=None,
+#                  key_type=None,
+#                  key_length=None,
+#                  key_curve=None,
+#                  private_key=None,
+#                  csr_origin=None,
+#                  key_password=None,
+#                  csr=None,
+#                  friendly_name=None,
+#                  chain_option=None):
+#         self.csr = csr
+#         self.friendly_name = friendly_name
+#         self.chain_option = chain_option
+#         self.subject = subject
+#         self.dns_names = dns_names
+#         self.email_addresses = email_addresses
+#         self.ip_addresses = ip_addresses
+#         self.attributes = attributes
+#         self.signature_algorithm = signature_algorithm
+#         self.public_key_algorithm = public_key_algorithm
+#         self.key_type = key_type
+#         self.key_length = key_length
+#         self.key_curve = key_curve
+#         self.private_key = private_key
+#         self.csr_origin = csr_origin
+#         self.key_password = key_password
+#         self.csr = csr
+#         self.friendly_name = friendly_name
+#         self.chain_option = chain_option
+#
 
 class CertStatuses:
     REQUESTED = 'REQUESTED'
@@ -215,7 +215,44 @@ class Policy:
 
 
 class CertificateRequest:
-    def __init__(self, id, status):
+    def __init__(self, id=None,
+                 status=None,
+                 subject=None,
+                 dns_names=None,
+                 email_addresses=None,
+                 ip_addresses=None,
+                 attributes=None,
+                 signature_algorithm=None,
+                 public_key_algorithm=None,
+                 key_type=None,
+                 key_length=None,
+                 key_curve=None,
+                 private_key=None,
+                 csr_origin=None,
+                 key_password=None,
+                 csr=None,
+                 friendly_name=None,
+                 chain_option=None):
+
+        self.csr = csr
+        self.friendly_name = friendly_name
+        self.chain_option = chain_option
+        self.subject = subject
+        self.dns_names = dns_names
+        self.email_addresses = email_addresses
+        self.ip_addresses = ip_addresses
+        self.attributes = attributes
+        self.signature_algorithm = signature_algorithm
+        self.public_key_algorithm = public_key_algorithm
+        self.key_type = key_type
+        self.key_length = key_length
+        self.key_curve = key_curve
+        self.private_key = private_key
+        self.csr_origin = csr_origin
+        self.key_password = key_password
+        self.csr = csr
+        self.friendly_name = friendly_name
+        self.chain_option = chain_option
         self.id = id
         self.status = status
 
