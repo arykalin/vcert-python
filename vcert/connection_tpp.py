@@ -122,7 +122,16 @@ class TPPConnection(CommonConnection):
         log.debug("Getting certificate status for id %s" % certificate_request.id)
 
         retrive_request = dict(CertificateDN=certificate_request.id, Format="base64", IncludeChain='true')
-        retrive_request['RootFirstOrder'] = 'false'
+
+        if certificate_request.chain_option == "last":
+            retrive_request['RootFirstOrder'] = 'false'
+            retrive_request['IncludeChain'] = 'true'
+        elif certificate_request.chain_option == "first":
+            retrive_request['RootFirstOrder'] = 'true'
+            retrive_request['IncludeChain'] = 'true'
+        else:
+            retrive_request['IncludeChain'] = 'false'
+
 
         status, data = self._post(URLS.CERTIFICATE_RETRIEVE, data=retrive_request)
         if status == HTTPStatus.OK:

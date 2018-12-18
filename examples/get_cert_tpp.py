@@ -30,7 +30,7 @@ def main():
                                  organization="Venafi",
                                  organization_unit="",
                                  common_name=randomword(10)+".venafi.example.com",
-                                 chain_option="last"
+                                 chain_option="first"
                                  ).build_request()
 
     request_id = conn.request_cert(request, ZONE)
