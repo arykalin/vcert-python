@@ -38,7 +38,7 @@ def main():
             break
         else:
             time.sleep(5)
-    pprint(cert)
+    print(cert)
 
 
 def randomword(length):

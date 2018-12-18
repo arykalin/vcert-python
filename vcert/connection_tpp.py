@@ -2,6 +2,7 @@ import requests
 from oscrypto import asymmetric
 from csrbuilder import CSRBuilder, pem_armor_csr
 import logging as log
+import base64
 from http import HTTPStatus
 from .errors import VenafiConnectionError, ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError
 from .common import Zone, CertificateRequest, Certificate, CommonConnection, CertStatuses, CertRequest
@@ -131,9 +132,8 @@ class TPPConnection(CommonConnection):
         :return:
         """
         status, data = self._post(URLS.CERTIFICATE_REQUESTS,
-                                  data={"PKCS10": request.__dict__['csr'], "PolicyDN":
-                                      r"\\\\VED\\\\Policy\\\\devops\\\\vcert",
-                                        "ObjectName": request.__dict__['friendly_name'],
+                                  data={"PKCS10": request.csr, "PolicyDN": self._get_policy_dn(zone),
+                                        "ObjectName": request.friendly_name,
                                         "DisableAutomaticRenewal": "true"})
         if status == HTTPStatus.OK:
             request = CertificateRequest.from_tpp_server_response(data)
@@ -152,7 +152,9 @@ class TPPConnection(CommonConnection):
             'IncludeChain': 'true',
         })
         if status == HTTPStatus.OK:
-            return data
+            pem64 = data['CertificateData']
+            pem = base64.b64decode(pem64)
+            return pem.decode()
         elif status == HTTPStatus.ACCEPTED:
             log.debug(data['Status'])
             return None
@@ -174,3 +176,8 @@ class TPPConnection(CommonConnection):
 
     def import_cert(self, request):
         raise NotImplementedError
+
+    def _get_policy_dn(self, zone):
+        # TODO: add regex here to check if VED\\Policy already in zone.
+        # TODO: check and fix number of backslash in zone. Should be \\\\
+        return r"\\\\VED\\\\Policy\\\\"+zone
