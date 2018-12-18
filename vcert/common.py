@@ -6,7 +6,6 @@ from pprint import pprint
 from http import HTTPStatus
 from .errors import VenafiConnectionError, ServerUnexptedBehavior, BadData
 
-
 MIME_JSON = "application/json"
 MINE_HTML = "text/html"
 MINE_TEXT = "text/plain"
@@ -14,13 +13,41 @@ MINE_ANY = "*/*"
 
 
 class CertRequest:
-    def __init__(self, csr=None, friendly_name=None, pickup_id=None, chain_option=None):
+    def __init__(self, subject=None,
+                 dns_names=None,
+                 email_addresses=None,
+                 ip_addresses=None,
+                 attributes=None,
+                 signature_algorithm=None,
+                 public_key_algorithm=None,
+                 key_type=None,
+                 key_length=None,
+                 key_curve=None,
+                 private_key=None,
+                 csr_origin=None,
+                 key_password=None,
+                 csr=None,
+                 friendly_name=None,
+                 chain_option=None):
         self.csr = csr
         self.friendly_name = friendly_name
-        self.pickup_id = pickup_id
         self.chain_option = chain_option
-
-
+        self.subject = subject
+        self.dns_names = dns_names
+        self.email_addresses = email_addresses
+        self.ip_addresses = ip_addresses
+        self.attributes = attributes
+        self.signature_algorithm = signature_algorithm
+        self.public_key_algorithm = public_key_algorithm
+        self.key_type = key_type
+        self.key_length = key_length
+        self.key_curve = key_curve
+        self.private_key = private_key
+        self.csr_origin = csr_origin
+        self.key_password = key_password
+        self.csr = csr
+        self.friendly_name = friendly_name
+        self.chain_option = chain_option
 
 
 class CertStatuses:
@@ -35,7 +62,8 @@ class CertField(str):
 
 
 class Zone:
-    def __init__(self, id, company_id, tag, zonetype, cert_policy_ids, default_cert_identity_policy, default_cert_use_policy, system_generated, creation_date):
+    def __init__(self, id, company_id, tag, zonetype, cert_policy_ids, default_cert_identity_policy,
+                 default_cert_use_policy, system_generated, creation_date):
         """
         :param str id:
         :param str company_id:
@@ -131,8 +159,10 @@ class Policy:
         CERTIFICATE_IDENTITY = "CERTIFICATE_IDENTITY"
         CERTIFICATE_USE = "CERTIFICATE_USE"
 
-    def __init__(self, policy_type=None, id=None, company_id=None, name=None, system_generated=None, creation_date=None, cert_provider_id=None,
-                 SubjectCNRegexes=None, SubjectORegexes=None, SubjectOURegexes=None, SubjectSTRegexes=None, SubjectLRegexes=None,
+    def __init__(self, policy_type=None, id=None, company_id=None, name=None, system_generated=None, creation_date=None,
+                 cert_provider_id=None,
+                 SubjectCNRegexes=None, SubjectORegexes=None, SubjectOURegexes=None, SubjectSTRegexes=None,
+                 SubjectLRegexes=None,
                  SubjectCRegexes=None, SANRegexes=None, key_types=None, KeyReuse=None):
         """
         :param str policy_type:
@@ -172,10 +202,10 @@ class Policy:
     @classmethod
     def from_server_response(cls, d):
         policy = cls(d['certificatePolicyType'], d['id'], d['companyId'], d['name'], d['systemGenerated'],
-                   dateutil.parser.parse(d['creationDate']), d.get('certificateProviderId'),
-                   d.get('subjectCNRegexes', []), d.get('subjectORegexes', []), d.get('subjectOURegexes', []),
-                   d.get('subjectSTRegexes', []), d.get('subjectLRegexes', []), d.get('subjectCRegexes', []),
-                   d.get('sanRegexes', []), [], d.get('keyReuse'))
+                     dateutil.parser.parse(d['creationDate']), d.get('certificateProviderId'),
+                     d.get('subjectCNRegexes', []), d.get('subjectORegexes', []), d.get('subjectOURegexes', []),
+                     d.get('subjectSTRegexes', []), d.get('subjectLRegexes', []), d.get('subjectCRegexes', []),
+                     d.get('sanRegexes', []), [], d.get('keyReuse'))
         for kt in d.get('keyTypes', []):
             policy.key_types.append(KeyType(key_type=kt['keyType'], key_sizes=kt['keyLengths']))  # todo: curves
         return policy
@@ -196,6 +226,7 @@ class CertificateRequest:
     @classmethod
     def from_tpp_server_response(cls, d):
         return cls(d['CertificateDN'], d['Guid'])
+
 
 class Certificate:
     def __init__(self, id, status):
@@ -285,7 +316,8 @@ class CommonConnection:
     @staticmethod
     def process_server_response(r):
         if r.status_code not in (HTTPStatus.OK, HTTPStatus.ACCEPTED):
-            raise VenafiConnectionError("Server status: %s, %s\n Response: %s", (r.status_code, r.request.url, r._content))
+            raise VenafiConnectionError("Server status: %s, %s\n Response: %s",
+                                        (r.status_code, r.request.url, r._content))
         content_type = r.headers.get("content-type")
         if content_type == MINE_TEXT:
             log.debug(r.text)
