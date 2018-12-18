@@ -16,3 +16,11 @@ class BadData(VenafiError):
 
 class ClientBadData(BadData):
     pass
+
+
+class CertificateRequestError(VenafiError):
+    pass
+
+
+class AuthenticationError(VenafiError):
+    pass

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+import time
 from vcert import TPPConnection
-from vcert.common import build_request
+from vcert import common
 from pprint import pprint
 from os import environ
 import logging
+import random, string
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -22,8 +24,21 @@ def main():
         print('Server offline')
         exit(1)
 
-    csr = build_request("US", "Moscow", "Moscow", "Venafi", "", "rewrewrwer1.venafi.example.com")
-    pprint(conn.make_request_and_wait_certificate(csr, ZONE))
+
+    request = conn.build_request("US", "Moscow", "Moscow", "Venafi", "", randomword(10)+".venafi.example.com")
+    request_id = conn.request_cert(request, ZONE)
+    while True:
+        cert = conn.retrieve_cert(request_id)
+        if cert:
+            break
+        else:
+            time.sleep(5)
+    pprint(cert)
+
+
+def randomword(length):
+   letters = string.ascii_lowercase
+   return ''.join(random.choice(letters) for i in range(length))
 
 if __name__ == '__main__':
     main()

@@ -2,8 +2,6 @@ import datetime
 import dateutil.parser
 import time
 import logging as log
-from oscrypto import asymmetric
-from csrbuilder import CSRBuilder, pem_armor_csr
 from pprint import pprint
 from http import HTTPStatus
 from .errors import VenafiConnectionError, ServerUnexptedBehavior, BadData
@@ -15,6 +13,16 @@ MINE_TEXT = "text/plain"
 MINE_ANY = "*/*"
 
 
+class CertRequest:
+    def __init__(self, csr=None, friendly_name=None, pickup_id=None, chain_option=None):
+        self.csr = csr
+        self.friendly_name = friendly_name
+        self.pickup_id = pickup_id
+        self.chain_option = chain_option
+
+
+
+
 class CertStatuses:
     REQUESTED = 'REQUESTED'
     PENDING = 'PENDING'
@@ -22,7 +30,7 @@ class CertStatuses:
 
 class CertField(str):
     def __init__(self, *args, **kwargs):
-        self.locked = false
+        self.locked = False
         super(CertField, self).__init__(*args, **kwargs)
 
 
@@ -176,28 +184,6 @@ class Policy:
         return "policy [%s] %s (%s)" % (self.policy_type, self.name, self.id)
 
 
-def build_request(country, province, locality, organization, organization_unit, common_name):
-    public_key, private_key = asymmetric.generate_pair('rsa', bit_size=2048)
-
-    data = {
-        'country_name': country,
-        'state_or_province_name': province,
-        'locality_name': locality,
-        'organization_name': organization,
-        'common_name': common_name,
-    }
-    if organization_unit:
-        data['organizational_unit_name'] = organization_unit
-    builder = CSRBuilder(
-        data,
-        public_key
-    )
-    builder.hash_algo = "sha256"
-    builder.subject_alt_domains = [common_name]
-    request = builder.build(private_key)
-    return pem_armor_csr(request)
-
-
 class CertificateRequest:
     def __init__(self, id, status):
         self.id = id
@@ -207,6 +193,9 @@ class CertificateRequest:
     def from_server_response(cls, d):
         return cls(d['id'], d['status'])
 
+    @classmethod
+    def from_tpp_server_response(cls, d):
+        return cls(d['CertificateDN'], d['Guid'])
 
 class Certificate:
     def __init__(self, id, status):
@@ -241,6 +230,13 @@ class CommonConnection:
         """
         raise NotImplementedError
 
+    def build_request(self, country, province, locality, organization, organization_unit, common_name):
+        """
+        :param str csr: Certitficate in PEM format
+        :param str zone: Venafi zone tag name
+        """
+        raise NotImplementedError
+
     def request_cert(self, csr, zone):
         """
         :param str csr: Certitficate in PEM format
@@ -248,7 +244,7 @@ class CommonConnection:
         """
         raise NotImplementedError
 
-    def retrieve_cert(self, request):
+    def retrieve_cert(self, request_id):
         raise NotImplementedError
 
     def revoke_cert(self, request):
