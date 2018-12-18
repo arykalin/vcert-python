@@ -204,7 +204,6 @@ class CertificateRequest:
                  common_name=None):
 
         self.csr = csr
-        self.friendly_name = friendly_name
         self.chain_option = chain_option
         self.subject = subject
         self.dns_names = dns_names
@@ -231,11 +230,11 @@ class CertificateRequest:
         self.organization_unit = organization_unit
         self.common_name = common_name
 
-    @classmethod
-    def from_server_response(cls, d):
-        return cls(d['id'], d['status'])
-
-    def build_request(self):
+    # @classmethod
+    # def from_server_response(cls, d):
+    #     return cls(d['id'], d['status'])
+    #
+    # def build_request(self):
         public_key, private_key = asymmetric.generate_pair('rsa', bit_size=2048)
 
         data = {
@@ -254,9 +253,9 @@ class CertificateRequest:
         builder.hash_algo = "sha256"
         builder.subject_alt_domains = [self.common_name]
         csr = builder.build(private_key)
-        csr = pem_armor_csr(csr)
+        self.csr = pem_armor_csr(csr)
 
-        return CertificateRequest(csr=csr, friendly_name=self.common_name, chain_option=self.chain_option)
+        # return CertificateRequest(csr=csr, friendly_name=self.common_name, chain_option=self.chain_option)
 
 
 class Certificate:
