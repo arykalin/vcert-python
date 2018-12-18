@@ -25,7 +25,12 @@ def main():
         exit(1)
 
 
-    request = conn.build_request("US", "Moscow", "Moscow", "Venafi", "", randomword(10)+".venafi.example.com")
+    request = conn.build_request(country="US", province="Moscow",
+                                 locality="Moscow",
+                                 organization="Venafi",
+                                 organization_unit="",
+                                 common_name=randomword(10)+".venafi.example.com")
+
     request_id = conn.request_cert(request, ZONE)
     while True:
         cert = conn.retrieve_cert(request_id)
