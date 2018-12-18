@@ -230,11 +230,6 @@ class CertificateRequest:
         self.organization_unit = organization_unit
         self.common_name = common_name
 
-    # @classmethod
-    # def from_server_response(cls, d):
-    #     return cls(d['id'], d['status'])
-    #
-    # def build_request(self):
         public_key, private_key = asymmetric.generate_pair('rsa', bit_size=2048)
 
         data = {
@@ -255,7 +250,6 @@ class CertificateRequest:
         csr = builder.build(private_key)
         self.csr = pem_armor_csr(csr)
 
-        # return CertificateRequest(csr=csr, friendly_name=self.common_name, chain_option=self.chain_option)
 
 
 class Certificate:
