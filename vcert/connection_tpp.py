@@ -3,7 +3,7 @@ from oscrypto import asymmetric
 from csrbuilder import CSRBuilder, pem_armor_csr
 import logging as log
 from http import HTTPStatus
-from .errors import VenafiConnectionError, VenafiServerUnexptedBehavior, VenafiClientBadData, VenafiCertificateRequestError, VenafiAuthenticationError
+from .errors import VenafiConnectionError, ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError
 from .common import Zone, CertificateRequest, Certificate, CommonConnection, CertStatuses, CertRequest
 
 class URLS:
@@ -98,7 +98,7 @@ class TPPConnection(CommonConnection):
             return status[1]["APIKey"], status[1]["ValidUntil"]
         else:
             log.error("Authentication status is not %s but %s. Exiting" % (HTTPStatus.OK, status[0]))
-            raise VenafiAuthenticationError
+            raise AuthenticationError
 
     def build_request(self, country, province, locality, organization, organization_unit, common_name):
         public_key, private_key = asymmetric.generate_pair('rsa', bit_size=2048)
@@ -141,7 +141,7 @@ class TPPConnection(CommonConnection):
             return request.id
         else:
             log.error("Request status is not %s. %s." % HTTPStatus.OK, status)
-            raise VenafiCertificateRequestError
+            raise CertificateRequestError
 
     def retrieve_cert(self, request_id):
         log.debug("Getting certificate status for id %s" % request_id)
@@ -158,7 +158,7 @@ class TPPConnection(CommonConnection):
             return None
         else:
             log.error("Status is not %s. %s" % HTTPStatus.OK, status)
-            raise VenafiServerUnexptedBehavior
+            raise ServerUnexptedBehavior
 
     def revoke_cert(self, request):
         raise NotImplementedError

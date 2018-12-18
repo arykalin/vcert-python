@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from vcert import CloudConnection
-from vcert.common import build_request
 from pprint import pprint
 import logging
 
