@@ -31,7 +31,7 @@ def main():
                                  organization_unit="",
                                  common_name=randomword(10)+".venafi.example.com",
                                  chain_option="first"
-                                 ).build_request()
+                                 )
 
     request_id = conn.request_cert(request, ZONE)
     while True:
