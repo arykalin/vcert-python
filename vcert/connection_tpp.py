@@ -1,6 +1,7 @@
 import requests
 import logging as log
 import base64
+import re
 from http import HTTPStatus
 from .errors import ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError
 from .common import CommonConnection
@@ -41,11 +42,15 @@ class TPPConnection(CommonConnection):
     def __init__(self, user, password, url, *args, **kwargs):
         """
         todo: docs
+        :type str user
+        :type str password
+        :type str url
         """
-        self._base_url = url
-        self._user = user
-        self._password = password
+        self._base_url = url  # type: str
+        self._user = user  # type: str
+        self._password = password  # type: str
         self._token = False
+        self._normalize_and_verify_base_url()
         # todo: add timeout check, like self.token = ("token-string-dsfsfdsfdsfdsf", valid_to)
 
     def _get(self, url="", params=None):
@@ -81,6 +86,20 @@ class TPPConnection(CommonConnection):
     def _get_policy_by_ids(self, policy_ids):
         for policy_id in policy_ids:
             status, data = self._get(URLS.POLICIES_BY_ID % policy_id)
+
+    def _normalize_and_verify_base_url(self):
+        u = self._base_url
+        if u.startswith("http://"):
+            u = "https://" + u[7:]
+        elif not u.startswith("https://"):
+            u = "https://" + u
+        if not u.endswith("/"):
+            u += "/"
+        if not u.endswith("vedsdk/"):
+            u += "vedsdk/"
+        if not re.match(r"^https://[a-z\d]+[-a-z\d\.]+[a-z\d][:\d]*/vedsdk/$", u):
+            raise ClientBadData
+        self._base_url = u
 
     def ping(self):
         status, data = self._get()
