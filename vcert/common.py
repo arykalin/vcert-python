@@ -6,7 +6,7 @@ from oscrypto import asymmetric
 from csrbuilder import CSRBuilder, pem_armor_csr
 from pprint import pprint
 from http import HTTPStatus
-from .errors import ConnectionError, ServerUnexptedBehavior
+from .errors import VenafiConnectionError, ServerUnexptedBehavior, BadData
 
 
 MIME_JSON = "application/json"
@@ -62,10 +62,31 @@ class Zone:
                    dateutil.parser.parse(d['creationDate']))
 
 
+class KeyTypes:
+    RSA = "rsa"
+    ECDSA = "ecdsa"
+
+
+class KeyType:
+    def __init__(self, key_type, key_sizes=None, key_curves=None):
+        self.key_type = key_type.lower()
+        if self.key_type == KeyTypes.RSA:
+            self.key_size = key_sizes
+        elif self.key_type == KeyTypes.ECDSA:
+            self.key_curves = list([x.lower() for x in key_curves])
+        else:
+            log.error("unknown key type: %s" % key_type)
+            raise BadData
+
+    def __repr__(self):
+        return "KeyType(%s, %s)" % (self.key_type, self.key_size or self.key_curves)
+
+
 class ZoneConfig:
-    def __init__(self, organization, organizational_unit, country, province, locality, CustomAttributeValues,
-                 SubjectCNRegexes, SubjectORegexes, SubjectOURegexes, SubjectSTRegexes, SubjectLRegexes,
-                 SubjectCRegexes, SANRegexes, AllowedKeyConfigurations, KeySizeLocked, HashAlgorithm):
+    def __init__(self, organization=None, organizational_unit=None, country=None, province=None, locality=None,
+                 CustomAttributeValues=None, SubjectCNRegexes=None, SubjectORegexes=None, SubjectOURegexes=None,
+                 SubjectSTRegexes=None, SubjectLRegexes=None, SubjectCRegexes=None, SANRegexes=None,
+                 allowed_key_configurations=None, KeySizeLocked=None, HashAlgorithm=None):
         """
         :param CertField organization:
         :param list[str] organizational_unit:
@@ -80,14 +101,21 @@ class ZoneConfig:
         :param list[str] SubjectLRegexes:
         :param list[str] SubjectCRegexes:
         :param list[str] SANRegexes:
-        :param AllowedKeyConfigurations:
+        :param list[KeyType] allowed_key_configurations:
         :param bool KeySizeLocked:
         :param HashAlgorithm:
         """
 
+        self.allowed_key_configurations = allowed_key_configurations or []
+
     @classmethod
-    def from_server_response(cls, d):
-        return cls()
+    def from_policy(cls, policy):
+        """
+        :param Policy policy:
+        """
+        zone_config = cls()
+        zone_config.allowed_key_configurations = policy.key_types[:]
+        return zone_config
 
 
 class Policy:
@@ -97,7 +125,7 @@ class Policy:
 
     def __init__(self, policy_type=None, id=None, company_id=None, name=None, system_generated=None, creation_date=None, cert_provider_id=None,
                  SubjectCNRegexes=None, SubjectORegexes=None, SubjectOURegexes=None, SubjectSTRegexes=None, SubjectLRegexes=None,
-                 SubjectCRegexes=None, SANRegexes=None, KeyTypes=None, KeyReuse=None):
+                 SubjectCRegexes=None, SANRegexes=None, key_types=None, KeyReuse=None):
         """
         :param str policy_type:
         :param str id:
@@ -113,7 +141,7 @@ class Policy:
         :param list[str] SubjectLRegexes:
         :param list[str] SubjectCRegexes:
         :param list[str] SANRegexes:
-        :param KeyTypes:
+        :param list[KeyType] key_types:
         :param bool KeyReuse:
         """
         self.policy_type = policy_type
@@ -130,17 +158,19 @@ class Policy:
         self.SubjectLRegexes = SubjectLRegexes
         self.SubjectCRegexes = SubjectCRegexes
         self.SANRegexes = SANRegexes
-        self.KeyTypes = KeyTypes
+        self.key_types = key_types
         self.KeyReuse = KeyReuse
 
     @classmethod
     def from_server_response(cls, d):
-        pprint(d)
-        return cls(d['certificatePolicyType'], d['id'], d['companyId'], d['name'], d['systemGenerated'],
+        policy = cls(d['certificatePolicyType'], d['id'], d['companyId'], d['name'], d['systemGenerated'],
                    dateutil.parser.parse(d['creationDate']), d.get('certificateProviderId'),
                    d.get('subjectCNRegexes', []), d.get('subjectORegexes', []), d.get('subjectOURegexes', []),
                    d.get('subjectSTRegexes', []), d.get('subjectLRegexes', []), d.get('subjectCRegexes', []),
-                   d.get('sanRegexes', []), d.get('keyTypes'), d.get('keyReuse'))
+                   d.get('sanRegexes', []), [], d.get('keyReuse'))
+        for kt in d.get('keyTypes', []):
+            policy.key_types.append(KeyType(key_type=kt['keyType'], key_sizes=kt['keyLengths']))  # todo: curves
+        return policy
 
     def __repr__(self):
         return "policy [%s] %s (%s)" % (self.policy_type, self.name, self.id)
@@ -259,7 +289,7 @@ class CommonConnection:
     @staticmethod
     def process_server_response(r):
         if r.status_code not in (HTTPStatus.OK, HTTPStatus.ACCEPTED):
-            raise ConnectionError("Server status: %s, %s\n Response: %s", (r.status_code, r.request.url, r._content))
+            raise VenafiConnectionError("Server status: %s, %s\n Response: %s", (r.status_code, r.request.url, r._content))
         content_type = r.headers.get("content-type")
         if content_type == MINE_TEXT:
             log.debug(r.text)

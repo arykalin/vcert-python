@@ -5,7 +5,7 @@ from pprint import pprint
 import logging
 
 logging.basicConfig(level=logging.INFO)
-TOKEN = ""
+TOKEN = "167edc4b-14c6-4a56-a194-e3270389a662"
 
 
 def main():
@@ -16,9 +16,9 @@ def main():
         print('Server offline')
         exit(1)
     conn.auth()
-
-    csr = build_request("US", "Moscow", "Moscow", "Venafi", "", "rewrewrwer1.venafi.example.com")
-    pprint(conn.make_request_and_wait_certificate(csr, "Default"))
+    conn.read_zone_conf("Default")
+    # csr = build_request("US", "Moscow", "Moscow", "Venafi", "", "rewrewrwer1.venafi.example.com")
+    # pprint(conn.make_request_and_wait_certificate(csr, "Default"))
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 import requests
 import logging as log
 from http import HTTPStatus
-from .errors import ConnectionError, ServerUnexptedBehavior, ClientBadData
+from .errors import VenafiConnectionError, ServerUnexptedBehavior, ClientBadData
 from .common import Zone, CertificateRequest, Certificate, CommonConnection
 
 class URLS:

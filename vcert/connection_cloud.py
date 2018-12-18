@@ -1,8 +1,8 @@
 import requests
 import logging as log
 from http import HTTPStatus
-from .errors import ConnectionError, ServerUnexptedBehavior, ClientBadData
-from .common import Zone, CertificateRequest, Certificate, CommonConnection, Policy
+from .errors import VenafiConnectionError, ServerUnexptedBehavior, ClientBadData
+from .common import Zone, CertificateRequest, Certificate, CommonConnection, Policy, ZoneConfig
 
 
 class URLS:
@@ -65,7 +65,7 @@ class CloudConnection(CommonConnection):
     @staticmethod
     def _process_server_response(r):
         if r.status_code not in (HTTPStatus.OK, HTTPStatus.CREATED, HTTPStatus.ACCEPTED):
-            raise ConnectionError("Server status: %s, %s", (r.status_code, r.request.url))
+            raise VenafiConnectionError("Server status: %s, %s", (r.status_code, r.request.url))
         content_type = r.headers.get("content-type")
         if content_type == MINE_TEXT:
             log.debug(r.text)
@@ -97,7 +97,7 @@ class CloudConnection(CommonConnection):
                     policy.SubjectCRegexes = p.SubjectCRegexes
                     policy.SANRegexes = p.SANRegexes
                 elif p.policy_type == p.Type.CERTIFICATE_USE:
-                    policy.KeyTypes = p.KeyTypes
+                    policy.key_types = p.key_types[:]
                     policy.KeyReuse = p.KeyReuse
         return policy
 
@@ -144,7 +144,7 @@ class CloudConnection(CommonConnection):
     def read_zone_conf(self, tag):
         z = self.get_zone_by_tag(tag)
         policy = self._get_policy_by_ids((z.default_cert_identity_policy, z.default_cert_use_policy))
-
+        zc = ZoneConfig.from_policy(policy)
 
     def gen_request(self, zone_config, request):
         raise NotImplementedError
