@@ -195,7 +195,7 @@ class CertificateRequest:
                  key_password=None,
                  csr=None,
                  friendly_name=None,
-                 chain_option=None,
+                 chain_option="first",
                  common_name=None):
 
         self.csr = csr
@@ -214,7 +214,7 @@ class CertificateRequest:
         self.csr_origin = csr_origin
         self.key_password = key_password
         self.csr = csr
-        self.friendly_name = friendly_name or self.common_name
+        self.friendly_name = friendly_name or common_name
         self.chain_option = chain_option
         self.id = id
         self.status = status
@@ -296,7 +296,10 @@ class CommonConnection:
         """
         raise NotImplementedError
 
-    def retrieve_cert(self, request_id):
+    def retrieve_cert(self, request):
+        """
+        :param CertificateRequest request:
+        """
         raise NotImplementedError
 
     def revoke_cert(self, request):

@@ -3,7 +3,7 @@ import logging as log
 from http import HTTPStatus
 from oscrypto import asymmetric
 from csrbuilder import CSRBuilder, pem_armor_csr
-from .errors import VenafiConnectionError, ServerUnexptedBehavior, ClientBadData
+from .errors import VenafiConnectionError, ServerUnexptedBehavior, ClientBadData,CertificateRequestError
 from .common import Zone, CertificateRequest, Certificate, CommonConnection, Policy, ZoneConfig
 
 
@@ -24,6 +24,10 @@ class URLS:
     MANAGED_CERTIFICATES = "managedcertificates"
     MANAGED_CERTIFICATE_BY_ID = MANAGED_CERTIFICATES + "/%s"
 
+
+class CondorChainOptions:
+    ROOT_FIRST = "ROOT_FIRST"
+    ROOT_LAST = "EE_FIRST"
 
 
 TOKEN_HEADER_NAME = "tppl-api-key"
@@ -135,11 +139,32 @@ class CloudConnection(CommonConnection):
         if status == HTTPStatus.CREATED:
             request.id = data['certificateRequests'][0]['id']
             return request
+        else:
+            log.error("unexpected server response %s: %s", status, data)
+            raise ServerUnexptedBehavior
 
     def retrieve_cert(self, request):
-        raise NotImplementedError
+        url = URLS.CERTIFICATE_RETRIEVE % request.id
+        if request.chain_option == "first":
+            url += "?chainOrder=%s&format=PEM" % CondorChainOptions.ROOT_FIRST
+        elif request.chain_option == "last":
+            url += "?chainOrder=%s&format=PEM" % CondorChainOptions.ROOT_LAST
+        else:  # todo: maybe over values
+            log.error("chain option %s is not valid" % request.chain_option)
+            raise ClientBadData
+        # todo: make search by thumbprint
+        status, data = self._get(url)
+        if status == HTTPStatus.OK:
+            return data
+        elif status == HTTPStatus.CONFLICT:
+            raise CertificateRequestError
+        else:
+            raise ServerUnexptedBehavior
+
+
 
     def revoke_cert(self, request):
+        # not supported in cloud
         raise NotImplementedError
 
     def renew_cert(self, request):

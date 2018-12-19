@@ -24,6 +24,7 @@ def main():
                                         )
 
     pprint(conn.make_request_and_wait_certificate(request, "Default"))
+    pprint(conn.retrieve_cert(request))
 
 def randomword(length):
    letters = string.ascii_lowercase
