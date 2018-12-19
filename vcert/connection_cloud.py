@@ -88,19 +88,21 @@ class CloudConnection(CommonConnection):
         policy = Policy()
         for policy_id in policy_ids:
             status, data = self._get(URLS.POLICIES_BY_ID % policy_id)
-            if status == HTTPStatus.OK:
-                p = Policy.from_server_response(data)
-                if p.policy_type == p.Type.CERTIFICATE_IDENTITY:  # todo: replace with somethin more pythonic
-                    policy.SubjectCNRegexes = p.SubjectCNRegexes
-                    policy.SubjectORegexes = p.SubjectORegexes
-                    policy.SubjectOURegexes = p.SubjectOURegexes
-                    policy.SubjectSTRegexes = p.SubjectSTRegexes
-                    policy.SubjectLRegexes = p.SubjectLRegexes
-                    policy.SubjectCRegexes = p.SubjectCRegexes
-                    policy.SANRegexes = p.SANRegexes
-                elif p.policy_type == p.Type.CERTIFICATE_USE:
-                    policy.key_types = p.key_types[:]
-                    policy.KeyReuse = p.KeyReuse
+            if status != HTTPStatus.OK:
+                log.error("")  # todo: log
+                continue
+            p = Policy.from_server_response(data)
+            if p.policy_type == p.Type.CERTIFICATE_IDENTITY:  # todo: replace with somethin more pythonic
+                policy.SubjectCNRegexes = p.SubjectCNRegexes
+                policy.SubjectORegexes = p.SubjectORegexes
+                policy.SubjectOURegexes = p.SubjectOURegexes
+                policy.SubjectSTRegexes = p.SubjectSTRegexes
+                policy.SubjectLRegexes = p.SubjectLRegexes
+                policy.SubjectCRegexes = p.SubjectCRegexes
+                policy.SANRegexes = p.SANRegexes
+            elif p.policy_type == p.Type.CERTIFICATE_USE:
+                policy.key_types = p.key_types[:]
+                policy.KeyReuse = p.KeyReuse
         return policy
 
     def ping(self):
@@ -127,12 +129,12 @@ class CloudConnection(CommonConnection):
         else:
             pass
 
-    def request_cert(self, csr, zone):
+    def request_cert(self, request, zone):
         z = self.get_zone_by_tag(zone)
-        status, data = self._post(URLS.CERTIFICATE_REQUESTS, data={"certificateSigningRequest": csr, "zoneId": z.id})
+        status, data = self._post(URLS.CERTIFICATE_REQUESTS, data={"certificateSigningRequest": request.csr, "zoneId": z.id})
         if status == HTTPStatus.CREATED:
-            request = CertificateRequest.from_server_response(data['certificateRequests'][0])
-            return request.id
+            request.id = data['certificateRequests'][0]['id']
+            return request
 
     def retrieve_cert(self, request):
         raise NotImplementedError

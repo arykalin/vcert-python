@@ -120,11 +120,6 @@ class TPPConnection(CommonConnection):
             raise AuthenticationError
 
     def request_cert(self, certificate_request, zone):
-        """
-        :param SigningRequest request:
-        :param str zone:
-        :return:
-        """
         status, data = self._post(URLS.CERTIFICATE_REQUESTS,
                                   data={"PKCS10": certificate_request.csr, "PolicyDN": self._get_policy_dn(zone),
                                         "ObjectName": certificate_request.friendly_name,

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import time
-from vcert import TPPConnection
-from vcert import common
+from vcert import TPPConnection,CertificateRequest
 from pprint import pprint
 from os import environ
 import logging
@@ -25,7 +24,7 @@ def main():
         exit(1)
 
 
-    request = common.CertificateRequest(country="US", province="Moscow",
+    request = CertificateRequest(country="US", province="Moscow",
                                  locality="Moscow",
                                  organization="Venafi",
                                  organization_unit="",

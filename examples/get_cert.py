@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-from vcert import CloudConnection
+from vcert import CloudConnection, CertificateRequest
 from pprint import pprint
+import string
+import random
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -16,9 +18,19 @@ def main():
         exit(1)
     conn.auth()
     conn.read_zone_conf("Default")
-    # csr = build_request("US", "Moscow", "Moscow", "Venafi", "", "rewrewrwer1.venafi.example.com")
-    # pprint(conn.make_request_and_wait_certificate(csr, "Default"))
+    request = CertificateRequest(country="US", province="Moscow",
+                                        locality="Moscow",
+                                        organization="Venafi",
+                                        organization_unit="",
+                                        common_name=randomword(10) + ".venafi.example.com",
+                                        chain_option="first"
+                                        )
 
+    pprint(conn.make_request_and_wait_certificate(request, "Default"))
+
+def randomword(length):
+   letters = string.ascii_lowercase
+   return ''.join(random.choice(letters) for i in range(length))
 
 if __name__ == '__main__':
     main()
