@@ -182,7 +182,7 @@ class CertificateRequest:
                  status=None,
                  subject=None,
                  dns_names=[],
-                 email_addresses=[],
+                 email_addresses="",
                  ip_addresses=[],
                  attributes=None,
                  signature_algorithm=None,
@@ -204,7 +204,6 @@ class CertificateRequest:
         self.dns_names = dns_names
         self.email_addresses = email_addresses
         self.ip_addresses = ip_addresses
-        self.subject_alt_names = dns_names+email_addresses+ip_addresses
         self.attributes = attributes
         self.signature_algorithm = signature_algorithm
         self.public_key_algorithm = public_key_algorithm
@@ -231,19 +230,22 @@ class CertificateRequest:
         }
         if self.email_addresses:
             data['email_address'] = self.email_addresses
-        if self.ip_addresses:
-            data['ip_address'] = self.ip_addresses
-        if self.dns_names:
-            data['dns_name'] = self.dns_names
+
         builder = CSRBuilder(
             data,
             public_key
         )
+
+        if self.ip_addresses:
+            builder.subject_alt_ips = self.ip_addresses
+        if self.dns_names:
+            builder.subject_alt_domains = self.dns_names
+
         builder.hash_algo = "sha256"
         builder.subject_alt_domains = [self.common_name]
         csr = builder.build(private_key)
         self.csr = pem_armor_csr(csr)
-        self.private_key = private_key
+        self.private_key = asymmetric.dump_private_key(private_key,None,"pem").decode()
 
 
 class Certificate:

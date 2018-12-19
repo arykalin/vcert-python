@@ -28,7 +28,7 @@ def main():
                                  common_name=randomword(10)+".venafi.example.com",
                                  chain_option="first",
                                  dns_names=["www.client.venafi.example.com", "ww1.client.venafi.example.com"],
-                                 email_addresses=["e1@venafi.example.com", "e2@venafi.example.com"],
+                                 email_addresses="e1@venafi.example.com, e2@venafi.example.com",
                                  ip_addresses=["127.0.0.1", "192.168.1.1"]
                                  )
 
@@ -40,6 +40,7 @@ def main():
         else:
             time.sleep(5)
     print(cert)
+    print(request.private_key)
 
 
 def randomword(length):
