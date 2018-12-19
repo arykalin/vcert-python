@@ -219,7 +219,7 @@ class CertificateRequest:
         self.csr_origin = csr_origin
         self.key_password = key_password
         self.csr = csr
-        self.friendly_name = friendly_name
+        self.friendly_name = friendly_name or self.common_name
         self.chain_option = chain_option
         self.id = id
         self.status = status
