@@ -24,12 +24,12 @@ def main():
         exit(1)
 
 
-    request = CertificateRequest(country="US", province="Moscow",
-                                 locality="Moscow",
-                                 organization="Venafi",
-                                 organization_unit="",
+    request = CertificateRequest(
                                  common_name=randomword(10)+".venafi.example.com",
-                                 chain_option="first"
+                                 chain_option="first",
+                                 dns_names=["www.client.venafi.example.com", "ww1.client.venafi.example.com"],
+                                 email_addresses="e1@venafi.example.com, e2@venafi.example.com",
+                                 ip_addresses=["127.0.0.1", "192.168.1.1"]
                                  )
 
     request_id = conn.request_cert(request, ZONE)
@@ -40,6 +40,7 @@ def main():
         else:
             time.sleep(5)
     print(cert)
+    print(request.private_key)
 
 
 def randomword(length):

@@ -181,9 +181,9 @@ class CertificateRequest:
     def __init__(self, id=None,
                  status=None,
                  subject=None,
-                 dns_names=None,
-                 email_addresses=None,
-                 ip_addresses=None,
+                 dns_names=[],
+                 email_addresses="",
+                 ip_addresses=[],
                  attributes=None,
                  signature_algorithm=None,
                  public_key_algorithm=None,
@@ -196,11 +196,6 @@ class CertificateRequest:
                  csr=None,
                  friendly_name=None,
                  chain_option=None,
-                 country=None,
-                 province=None,
-                 locality=None,
-                 organization=None,
-                 organization_unit=None,
                  common_name=None):
 
         self.csr = csr
@@ -223,11 +218,6 @@ class CertificateRequest:
         self.chain_option = chain_option
         self.id = id
         self.status = status
-        self.country = country
-        self.province = province
-        self.locality = locality
-        self.organization = organization
-        self.organization_unit = organization_unit
         self.common_name = common_name
         self._build_csr(("rsa", 2048))
 
@@ -236,22 +226,26 @@ class CertificateRequest:
         public_key, private_key = asymmetric.generate_pair(sign_type, bit_size=sign_param)
 
         data = {
-            'country_name': self.country,
-            'state_or_province_name': self.province,
-            'locality_name': self.locality,
-            'organization_name': self.organization,
             'common_name': self.common_name,
         }
-        if self.organization_unit:
-            data['organizational_unit_name'] = self.organization_unit
+        if self.email_addresses:
+            data['email_address'] = self.email_addresses
+
         builder = CSRBuilder(
             data,
             public_key
         )
+
+        if self.ip_addresses:
+            builder.subject_alt_ips = self.ip_addresses
+        if self.dns_names:
+            builder.subject_alt_domains = self.dns_names
+
         builder.hash_algo = "sha256"
         builder.subject_alt_domains = [self.common_name]
         csr = builder.build(private_key)
         self.csr = pem_armor_csr(csr)
+        self.private_key = asymmetric.dump_private_key(private_key,None,"pem").decode()
 
 
 class Certificate:

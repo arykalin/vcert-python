@@ -18,10 +18,7 @@ def main():
         exit(1)
     conn.auth()
     conn.read_zone_conf("Default")
-    request = CertificateRequest(country="US", province="Moscow",
-                                        locality="Moscow",
-                                        organization="Venafi",
-                                        organization_unit="",
+    request = CertificateRequest(
                                         common_name=randomword(10) + ".venafi.example.com",
                                         chain_option="first"
                                         )
