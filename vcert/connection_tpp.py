@@ -119,7 +119,7 @@ class TPPConnection(CommonConnection):
             log.error("Authentication status is not %s but %s. Exiting" % (HTTPStatus.OK, status[0]))
             raise AuthenticationError
 
-    #TODO: Need to add service genmerated CSR implementation
+    # TODO: Need to add service genmerated CSR implementation
     def request_cert(self, certificate_request, zone):
         status, data = self._post(URLS.CERTIFICATE_REQUESTS,
                                   data={"PolicyDN": self._get_policy_dn(zone),
@@ -147,7 +147,6 @@ class TPPConnection(CommonConnection):
             retrive_request['IncludeChain'] = 'true'
         else:
             retrive_request['IncludeChain'] = 'false'
-
 
         status, data = self._post(URLS.CERTIFICATE_RETRIEVE, data=retrive_request)
         if status == HTTPStatus.OK:
