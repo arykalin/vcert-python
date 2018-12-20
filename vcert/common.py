@@ -355,7 +355,7 @@ class CommonConnection:
 
     @staticmethod
     def process_server_response(r):
-        if r.status_code not in (HTTPStatus.OK, HTTPStatus.ACCEPTED, HTTPStatus.CREATED):
+        if r.status_code not in (HTTPStatus.OK, HTTPStatus.ACCEPTED, HTTPStatus.CREATED, HTTPStatus.CONFLICT):
             raise VenafiConnectionError("Server status: %s, %s\n Response: %s",
                                         (r.status_code, r.request.url, r._content))
         content_type = r.headers.get("content-type")

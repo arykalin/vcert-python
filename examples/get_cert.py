@@ -44,6 +44,8 @@ def main():
     )
 
     request = conn.request_cert(request, ZONE)
+    # TODO: workaround because we need to wait a bit untill certificate request will be created in cloud
+    time.sleep(5)
     while True:
         cert = conn.retrieve_cert(request)
         if cert:
