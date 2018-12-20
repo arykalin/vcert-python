@@ -40,7 +40,10 @@ def main():
             time.sleep(5)
     print(cert)
     print(request.private_key)
-
+    f = open("/tmp/cert.pem","w")
+    f.write(cert)
+    f = open("/tmp/cert.key","w")
+    f.write(request.private_key)
 
     renew_id=request.id
     conn.renew_cert(renew_id)
@@ -49,12 +52,14 @@ def main():
         chain_option="first",
     )
     while True:
-        cert = conn.retrieve_cert(new_request)
-        if cert:
+        new_cert = conn.retrieve_cert(new_request)
+        if new_cert:
             break
         else:
             time.sleep(5)
-    print(cert)
+    print(new_cert)
+    f = open("/tmp/new_cert.pem","w")
+    f.write(new_cert)
 
 
 def randomword(length):

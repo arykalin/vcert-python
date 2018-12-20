@@ -220,10 +220,8 @@ class CertificateRequest:
         self.id = id
         self.status = status
         self.common_name = common_name
-        # self._build_csr(("rsa", 2048))
 
     def build_csr(self, sign_type, sign_param):
-        # sign_type, sign_param = algo
         public_key, private_key = asymmetric.generate_pair(sign_type, bit_size=sign_param)
 
         data = {
