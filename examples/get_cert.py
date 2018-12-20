@@ -20,9 +20,9 @@ def main():
     TOKEN = (environ['TOKEN'])
     ZONE = (environ['CLOUDZONE'])
 
-    # USER = (environ['TPPUSER'])
-    # PASSWORD = (environ['TPPPASSWORD'])
-    # URL = (environ['TPPURL'])
+    USER = (environ['TPPUSER'])
+    PASSWORD = (environ['TPPPASSWORD'])
+    URL = (environ['TPPURL'])
     # ZONE = (environ['TPPZONE'])
 
     if TOKEN:
@@ -44,9 +44,9 @@ def main():
     request = CertificateRequest(
         common_name=randomword(10) + ".venafi.example.com",
         chain_option="first",
-        dns_names=["www.client.venafi.example.com", "ww1.client.venafi.example.com"],
-        email_addresses="e1@venafi.example.com, e2@venafi.example.com",
-        ip_addresses=["127.0.0.1", "192.168.1.1"]
+        # dns_names=["www.client.venafi.example.com", "ww1.client.venafi.example.com"],
+        # email_addresses="e1@venafi.example.com, e2@venafi.example.com",
+        # ip_addresses=["127.0.0.1", "192.168.1.1"]
     )
 
     request = conn.request_cert(request, ZONE)
@@ -61,7 +61,7 @@ def main():
     f = open("/tmp/cert.pem", "w")
     f.write(cert)
     f = open("/tmp/cert.key", "w")
-    f.write(request.private_key)
+    f.write(request.private_key_pem)
 
     renew_id = request.id
     conn.renew_cert(renew_id)
