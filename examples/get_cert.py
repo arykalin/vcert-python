@@ -11,42 +11,22 @@ logging.basicConfig(level=logging.DEBUG)
 
 def main():
 
-    TOKEN = None
-    USER = None
-    PASSWORD = None
-    URL = None
-    ZONE = None
+    TOKEN = environ.get('TOKEN')
 
-    TOKEN = (environ['TOKEN'])
-    ZONE = (environ['CLOUDZONE'])
-
-    # USER = (environ['TPPUSER'])
-    # PASSWORD = (environ['TPPPASSWORD'])
-    # URL = (environ['TPPURL'])
-    # ZONE = (environ['TPPZONE'])
+    USER = environ.get('TPPUSER')
+    PASSWORD = environ.get('TPPPASSWORD')
+    URL = environ.get('TPPURL')
 
     if TOKEN:
         print("Using cloud connection")
+        ZONE = environ['CLOUDZONE']
         conn = CloudConnection(TOKEN)
-        # status = conn.ping()
-        # print("Server online:", status)
-        # if not status:
-        #     print('Server offline')
-        #     exit(1)
-        # conn.auth()
-        # conn.read_zone_conf("Default")
-        # request = CertificateRequest(
-        #                                     common_name=randomword(10) + ".venafi.example.com",
-        #                                     chain_option="first"
-        #                                     )
-        #
-        # pprint(conn.make_request_and_wait_certificate(request, "Default"))
-        # pprint(conn.retrieve_cert(request))
-
     elif USER:
+        ZONE = environ['TPPZONE']
         print("Using TPP conection")
-
         conn = TPPConnection(USER, PASSWORD, URL)
+    else:
+        raise Exception("require environment vaiable TOKEN or USER,PASSWORD,URL")
 
     print("Tring to ping url", URL)
     status = conn.ping()

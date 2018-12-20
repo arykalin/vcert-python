@@ -157,7 +157,7 @@ class CloudConnection(CommonConnection):
         # todo: make search by thumbprint
         status, data = self._get(url)
         if status == HTTPStatus.OK:
-            return data
+            return data.decode()
         elif status == HTTPStatus.CONFLICT:
             raise CertificateRequestError
         else:
