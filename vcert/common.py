@@ -6,7 +6,7 @@ from oscrypto import asymmetric
 from csrbuilder import CSRBuilder, pem_armor_csr
 from pprint import pprint
 from http import HTTPStatus
-from .errors import VenafiConnectionError, ServerUnexptedBehavior, BadData
+from .errors import VenafiConnectionError, ServerUnexptedBehavior, BadData, ClientBadData
 
 MIME_JSON = "application/json"
 MINE_HTML = "text/html"
@@ -63,7 +63,7 @@ class Zone:
 
 class KeyTypes:
     RSA = "rsa"
-    ECDSA = "ecdsa"
+    ECDSA = "ec"
 
 
 class KeyType:
@@ -187,9 +187,9 @@ class CertificateRequest:
                  attributes=None,
                  signature_algorithm=None,
                  public_key_algorithm=None,
-                 key_type=None,
-                 key_length=None,
-                 key_curve=None,
+                 key_type=KeyTypes.RSA,
+                 key_length=2048,
+                 key_curve=None,  #todo: default curve
                  private_key=None,
                  csr_origin=None,
                  key_password=None,
@@ -210,19 +210,33 @@ class CertificateRequest:
         self.key_type = key_type
         self.key_length = key_length
         self.key_curve = key_curve
-        self.private_key = private_key
+        if isinstance( private_key, str):
+            self.private_key = asymmetric.load_private_key(private_key)
+            self.key_type = self.private_key.algorithm
+        elif isinstance(private_key, asymmetric.PrivateKey):
+            self.private_key = private_key
+            self.key_type = self.private_key.algorithm
+        elif private_key is None:
+            self.private_key = None
         self.csr_origin = csr_origin
         self.key_password = key_password
         self.csr = csr
-        self.private_key= private_key
         self.friendly_name = friendly_name or common_name
         self.chain_option = chain_option
         self.id = id
         self.status = status
         self.common_name = common_name
 
-    def build_csr(self, sign_type, sign_param):
-        public_key, private_key = asymmetric.generate_pair(sign_type, bit_size=sign_param)
+    def build_csr(self):
+        if not self.private_key:
+            if self.key_type == KeyTypes.RSA:
+                public_key, self.private_key = asymmetric.generate_pair("rsa", bit_size=self.key_length)
+            elif self.key_type == KeyTypes.ECDSA:
+                public_key, self.private_key = asymmetric.generate_pair("ec", curve=self.key_curve)
+            else:
+                raise ClientBadData
+        else:
+            public_key = gen_public_from_private(self.private_key, self.key_type)  # todo: write function
 
         data = {
             'common_name': self.common_name,
@@ -242,8 +256,12 @@ class CertificateRequest:
 
         builder.hash_algo = "sha256"
         builder.subject_alt_domains = [self.common_name]
-        csr = builder.build(private_key)
-        return pem_armor_csr(csr), asymmetric.dump_private_key(private_key,None,"pem").decode()
+        self.csr =  builder.build(self.private_key)
+        return
+
+    @property
+    def private_key_pem(self):
+        return asymmetric.dump_private_key(self.private_key,None,"pem").decode()
 
 
 class Certificate:
@@ -286,9 +304,9 @@ class CommonConnection:
         """
         raise NotImplementedError
 
-    def request_cert(self, csr, zone):
+    def request_cert(self, request, zone):
         """
-        :param CertificateRequest csr: Certitficate in PEM format
+        :param CertificateRequest request: Certitficate in PEM format
         :param str zone: Venafi zone tag name
         :rtype CertificateRequest
         """

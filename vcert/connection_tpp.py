@@ -120,17 +120,18 @@ class TPPConnection(CommonConnection):
             raise AuthenticationError
 
     # TODO: Need to add service genmerated CSR implementation
-    def request_cert(self, certificate_request, zone):
-        certificate_request.csr, certificate_request.private_key = certificate_request.build_csr("rsa", 2048)
+    def request_cert(self, request, zone):
+        if not request.csr:
+            request.build_csr()
         status, data = self._post(URLS.CERTIFICATE_REQUESTS,
                                   data={"PolicyDN": self._get_policy_dn(zone),
-                                        "PKCS10": certificate_request.csr,
-                                        "ObjectName": certificate_request.friendly_name,
+                                        "PKCS10": request.csr,
+                                        "ObjectName": request.friendly_name,
                                         "DisableAutomaticRenewal": "true"})
         if status == HTTPStatus.OK:
-            certificate_request.id = data['CertificateDN']
-            log.debug("Certificate sucessfully requested with request id %s." % certificate_request.id)
-            return certificate_request
+            request.id = data['CertificateDN']
+            log.debug("Certificate sucessfully requested with request id %s." % request.id)
+            return request
         else:
             log.error("Request status is not %s. %s." % HTTPStatus.OK, status)
             raise CertificateRequestError

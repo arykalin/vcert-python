@@ -135,6 +135,8 @@ class CloudConnection(CommonConnection):
 
     def request_cert(self, request, zone):
         z = self.get_zone_by_tag(zone)
+        if not request.csr:
+            request.build_csr()
         status, data = self._post(URLS.CERTIFICATE_REQUESTS, data={"certificateSigningRequest": request.csr, "zoneId": z.id})
         if status == HTTPStatus.CREATED:
             request.id = data['certificateRequests'][0]['id']
@@ -161,8 +163,6 @@ class CloudConnection(CommonConnection):
         else:
             raise ServerUnexptedBehavior
 
-
-
     def revoke_cert(self, request):
         # not supported in cloud
         raise NotImplementedError
@@ -179,6 +179,7 @@ class CloudConnection(CommonConnection):
         raise NotImplementedError
 
     def import_cert(self, request):
+        # not supported in cloud
         raise NotImplementedError
 
     def build_request(self, country, province, locality, organization, organization_unit, common_name):
