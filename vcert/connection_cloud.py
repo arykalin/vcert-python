@@ -1,4 +1,5 @@
 import requests
+from os import environ
 import logging as log
 from http import HTTPStatus
 from oscrypto import asymmetric
@@ -8,7 +9,11 @@ from .common import Zone, CertificateRequest, Certificate, CommonConnection, Pol
 
 
 class URLS:
-    API_BASE_URL = "https://api.venafi.cloud/v1/"
+    CLOUDURL = environ.get('CLOUDURL')
+    if CLOUDURL:
+        API_BASE_URL = CLOUDURL
+    else:
+        API_BASE_URL = "https://api.venafi.cloud/v1/"
 
     USER_ACCOUNTS = "useraccounts"
     PING = "ping"

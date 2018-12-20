@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from vcert import CloudConnection, CertificateRequest, TPPConnection
-from pprint import pprint
 import string
 import random
 import logging
@@ -51,7 +50,7 @@ def main():
         if cert:
             break
         else:
-            time.sleep(5)
+            time.sleep(30)
     print(cert)
     print(request.private_key)
     f = open("/tmp/cert.pem", "w")
