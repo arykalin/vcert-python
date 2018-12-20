@@ -11,28 +11,22 @@ logging.basicConfig(level=logging.DEBUG)
 
 def main():
 
-    TOKEN = None
-    USER = None
-    PASSWORD = None
-    URL = None
-    ZONE = None
+    TOKEN = environ.get('TOKEN')
 
-    TOKEN = (environ['TOKEN'])
-    ZONE = (environ['CLOUDZONE'])
-
-    USER = (environ['TPPUSER'])
-    PASSWORD = (environ['TPPPASSWORD'])
-    URL = (environ['TPPURL'])
-    # ZONE = (environ['TPPZONE'])
+    USER = environ.get('TPPUSER')
+    PASSWORD = environ.get('TPPPASSWORD')
+    URL = environ.get('TPPURL')
 
     if TOKEN:
         print("Using cloud connection")
+        ZONE = environ['CLOUDZONE']
         conn = CloudConnection(TOKEN)
-
     elif USER:
+        ZONE = environ['TPPZONE']
         print("Using TPP conection")
-
         conn = TPPConnection(USER, PASSWORD, URL)
+    else:
+        raise Exception("require environment vaiable TOKEN or USER,PASSWORD,URL")
 
     print("Tring to ping url", URL)
     status = conn.ping()
