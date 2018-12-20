@@ -214,15 +214,16 @@ class CertificateRequest:
         self.csr_origin = csr_origin
         self.key_password = key_password
         self.csr = csr
+        self.private_key= private_key
         self.friendly_name = friendly_name or common_name
         self.chain_option = chain_option
         self.id = id
         self.status = status
         self.common_name = common_name
-        self._build_csr(("rsa", 2048))
+        # self._build_csr(("rsa", 2048))
 
-    def _build_csr(self, algo):
-        sign_type, sign_param = algo
+    def build_csr(self, sign_type, sign_param):
+        # sign_type, sign_param = algo
         public_key, private_key = asymmetric.generate_pair(sign_type, bit_size=sign_param)
 
         data = {
@@ -244,8 +245,7 @@ class CertificateRequest:
         builder.hash_algo = "sha256"
         builder.subject_alt_domains = [self.common_name]
         csr = builder.build(private_key)
-        self.csr = pem_armor_csr(csr)
-        self.private_key = asymmetric.dump_private_key(private_key,None,"pem").decode()
+        return pem_armor_csr(csr), asymmetric.dump_private_key(private_key,None,"pem").decode()
 
 
 class Certificate:

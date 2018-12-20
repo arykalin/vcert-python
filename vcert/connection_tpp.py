@@ -3,7 +3,7 @@ import logging as log
 import base64
 import re
 from http import HTTPStatus
-from .errors import ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError
+from .errors import ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError, CertificateRenewError
 from .common import CommonConnection
 
 
@@ -15,7 +15,7 @@ class URLS:
     CERTIFICATE_RETRIEVE = "certificates/retrieve"
     FIND_POLICY = "config/findpolicy"
     CERTIFICATE_REVOKE = "certificates/revoke"
-    CERTIFICATE_REVNEW = "certificates/renew"
+    CERTIFICATE_RENEW = "certificates/renew"
     CERTIFICATE_SEARCH = "certificates/"
     CERTIFICATE_IMPORT = "certificates/import"
 
@@ -121,6 +121,7 @@ class TPPConnection(CommonConnection):
 
     # TODO: Need to add service genmerated CSR implementation
     def request_cert(self, certificate_request, zone):
+        certificate_request.csr, certificate_request.private_key = certificate_request.build_csr("rsa", 2048)
         status, data = self._post(URLS.CERTIFICATE_REQUESTS,
                                   data={"PolicyDN": self._get_policy_dn(zone),
                                         "PKCS10": certificate_request.csr,
@@ -164,8 +165,13 @@ class TPPConnection(CommonConnection):
     def revoke_cert(self, request):
         raise NotImplementedError
 
-    def renew_cert(self, request):
-        raise NotImplementedError
+    def renew_cert(self, certificate_request_id):
+        log.debug("Trying to renew certificate %s" % certificate_request_id)
+        status, data = self._post(URLS.CERTIFICATE_RENEW, data={"CertificateDN": certificate_request_id})
+        if not data['Success']:
+            raise CertificateRenewError
+        else:
+            return certificate_request_id
 
     def read_zone_conf(self, tag):
         raise NotImplementedError

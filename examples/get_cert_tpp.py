@@ -31,15 +31,30 @@ def main():
         ip_addresses=["127.0.0.1", "192.168.1.1"]
     )
 
-    request_id = conn.request_cert(request, ZONE)
+    request = conn.request_cert(request, ZONE)
     while True:
-        cert = conn.retrieve_cert(request_id)
+        cert = conn.retrieve_cert(request)
         if cert:
             break
         else:
             time.sleep(5)
     print(cert)
     print(request.private_key)
+
+
+    renew_id=request.id
+    conn.renew_cert(renew_id)
+    new_request = CertificateRequest(
+        id=renew_id,
+        chain_option="first",
+    )
+    while True:
+        cert = conn.retrieve_cert(new_request)
+        if cert:
+            break
+        else:
+            time.sleep(5)
+    print(cert)
 
 
 def randomword(length):

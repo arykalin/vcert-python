@@ -22,5 +22,9 @@ class CertificateRequestError(VenafiError):
     pass
 
 
+class CertificateRenewError(VenafiError):
+    pass
+
+
 class AuthenticationError(VenafiError):
     pass
