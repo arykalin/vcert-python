@@ -331,9 +331,6 @@ class CommonConnection:
         """
         raise NotImplementedError
 
-    def gen_request(self, zone_config, request):
-        raise NotImplementedError
-
     def import_cert(self, request):
         raise NotImplementedError
 

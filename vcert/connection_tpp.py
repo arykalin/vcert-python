@@ -177,9 +177,6 @@ class TPPConnection(CommonConnection):
     def read_zone_conf(self, tag):
         raise NotImplementedError
 
-    def gen_request(self, zone_config, request):
-        raise NotImplementedError
-
     def import_cert(self, request):
         raise NotImplementedError
 
