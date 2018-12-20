@@ -175,9 +175,6 @@ class CloudConnection(CommonConnection):
         policy = self._get_policy_by_ids((z.default_cert_identity_policy, z.default_cert_use_policy))
         zc = ZoneConfig.from_policy(policy)
 
-    def gen_request(self, zone_config, request):
-        raise NotImplementedError
-
     def import_cert(self, request):
         # not supported in cloud
         raise NotImplementedError
