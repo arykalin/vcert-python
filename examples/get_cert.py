@@ -44,13 +44,13 @@ def main():
 
     request = conn.request_cert(request, ZONE)
     # TODO: workaround because we need to wait a bit untill certificate request will be created in cloud
-    time.sleep(5)
+    time.sleep(30)
     while True:
         cert = conn.retrieve_cert(request)
         if cert:
             break
         else:
-            time.sleep(30)
+            time.sleep(5)
     print(cert)
     print(request.private_key)
     f = open("/tmp/cert.pem", "w")
