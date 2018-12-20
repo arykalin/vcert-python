@@ -256,7 +256,7 @@ class CertificateRequest:
 
         builder.hash_algo = "sha256"
         builder.subject_alt_domains = [self.common_name]
-        self.csr =  builder.build(self.private_key)
+        self.csr = pem_armor_csr(builder.build(self.private_key))
         return
 
     @property
