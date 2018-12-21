@@ -8,8 +8,8 @@ from os import environ
 
 logging.basicConfig(level=logging.INFO)
 
-def main():
 
+def main():
     TOKEN = environ.get('TOKEN')
 
     USER = environ.get('TPPUSER')
@@ -79,9 +79,11 @@ def main():
         f = open("/tmp/new_cert.pem", "w")
         f.write(new_cert)
 
+
 def randomword(length):
-   letters = string.ascii_lowercase
-   return ''.join(random.choice(letters) for i in range(length))
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(length))
+
 
 if __name__ == '__main__':
     main()

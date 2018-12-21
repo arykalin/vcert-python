@@ -183,6 +183,7 @@ class CertificateRequest:
                  attributes=None,
                  signature_algorithm=None,
                  public_key_algorithm=None,
+                 public_key=None,
                  key_type=KeyTypes.RSA,
                  key_length=2048,
                  key_curve=None,  #todo: default curve
@@ -209,9 +210,11 @@ class CertificateRequest:
         if isinstance( private_key, str):
             self.private_key = asymmetric.load_private_key(private_key)
             self.key_type = self.private_key.algorithm
+            self.public_key = None
         elif isinstance(private_key, asymmetric.PrivateKey):
             self.private_key = private_key
             self.key_type = self.private_key.algorithm
+            self.public_key = None
         elif private_key is None:
             self.private_key = None
         self.csr_origin = csr_origin
@@ -226,13 +229,14 @@ class CertificateRequest:
     def build_csr(self):
         if not self.private_key:
             if self.key_type == KeyTypes.RSA:
-                public_key, self.private_key = asymmetric.generate_pair("rsa", bit_size=self.key_length)
+                self.public_key, self.private_key = asymmetric.generate_pair("rsa", bit_size=self.key_length)
             elif self.key_type == KeyTypes.ECDSA:
-                public_key, self.private_key = asymmetric.generate_pair("ec", curve=self.key_curve)
+                self.public_key, self.private_key = asymmetric.generate_pair("ec", curve=self.key_curve)
             else:
                 raise ClientBadData
         else:
-            public_key = gen_public_from_private(self.private_key, self.key_type)  # todo: write function
+            raise NotImplementedError
+            # public_key = gen_public_from_private(self.private_key, self.key_type)  # todo: write function
 
         data = {
             'common_name': self.common_name,
@@ -242,7 +246,7 @@ class CertificateRequest:
 
         builder = CSRBuilder(
             data,
-            public_key
+            self.public_key
         )
 
         if self.ip_addresses:
