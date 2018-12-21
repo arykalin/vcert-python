@@ -131,7 +131,7 @@ class TPPConnection(CommonConnection):
         if status == HTTPStatus.OK:
             request.id = data['CertificateDN']
             log.debug("Certificate sucessfully requested with request id %s." % request.id)
-            return request
+            return True
         else:
             log.error("Request status is not %s. %s." % HTTPStatus.OK, status)
             raise CertificateRequestError

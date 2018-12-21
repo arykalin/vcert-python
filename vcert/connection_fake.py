@@ -114,7 +114,7 @@ class ConnectionFake(CommonConnection):
         """
 
     def ping(self):
-        return True
+        return status == HTTPStatus.OK and "Ready"
 
     def auth(self):
         return fake_user()

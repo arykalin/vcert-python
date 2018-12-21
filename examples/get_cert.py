@@ -7,6 +7,7 @@ import time
 from os import environ
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("urllib3").setLevel(logging.ERROR)
 
 
 def main():
@@ -53,7 +54,8 @@ def main():
             chain_option="first",
         )
 
-    request = conn.request_cert(request, ZONE)
+    conn.request_cert(request, ZONE)
+    conn._get_cert_status(request.id)
     while True:
         cert = conn.retrieve_cert(request)
         if cert:
@@ -67,7 +69,7 @@ def main():
     f = open("/tmp/cert.key", "w")
     f.write(request.private_key_pem)
 
-    if USER:
+    if USER or TOKEN:
         renew_id = request.id
         conn.renew_cert(renew_id)
         new_request = CertificateRequest(
