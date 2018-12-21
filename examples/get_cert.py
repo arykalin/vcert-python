@@ -6,7 +6,7 @@ import logging
 import time
 from os import environ
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 def main():
 
@@ -20,7 +20,7 @@ def main():
         print("Using cloud connection")
         ZONE = environ['CLOUDZONE']
         conn = CloudConnection(TOKEN)
-    elif USER:
+    elif USER and PASSWORD and URL:
         ZONE = environ['TPPZONE']
         print("Using TPP conection")
         conn = TPPConnection(USER, PASSWORD, URL)
@@ -34,13 +34,19 @@ def main():
         print('Server offline')
         exit(1)
 
-    request = CertificateRequest(
-        common_name=randomword(10) + ".venafi.example.com",
-        chain_option="first",
-        # dns_names=["www.client.venafi.example.com", "ww1.client.venafi.example.com"],
-        # email_addresses="e1@venafi.example.com, e2@venafi.example.com",
-        # ip_addresses=["127.0.0.1", "192.168.1.1"]
-    )
+    if conn == TPPConnection:
+        request = CertificateRequest(
+            common_name=randomword(10) + ".venafi.example.com",
+            chain_option="first",
+            dns_names=["www.client.venafi.example.com", "ww1.client.venafi.example.com"],
+            email_addresses="e1@venafi.example.com, e2@venafi.example.com",
+            ip_addresses=["127.0.0.1", "192.168.1.1"]
+        )
+    else:
+        request = CertificateRequest(
+            common_name=randomword(10) + ".venafi.example.com",
+            chain_option="first",
+        )
 
     request = conn.request_cert(request, ZONE)
     while True:
@@ -56,7 +62,7 @@ def main():
     f = open("/tmp/cert.key", "w")
     f.write(request.private_key_pem)
 
-    if USER:
+    if conn == TPPConnection:
         renew_id = request.id
         conn.renew_cert(renew_id)
         new_request = CertificateRequest(

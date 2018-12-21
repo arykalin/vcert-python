@@ -169,7 +169,7 @@ class CloudConnection(CommonConnection):
         # TODO: run it in loop
         if status == HTTPStatus.OK or HTTPStatus.CONFLICT:
             if data['status'] == CertStatuses.PENDING or data['status'] == CertStatuses.REQUESTED:
-                log.debug("Certificate status is %s." % data['status'])
+                log.info("Certificate status is %s." % data['status'])
                 return None
             elif data['status'] == CertStatuses.FAILED:
                 log.debug("Status is %s. Returning data for debug" % data['status'])
