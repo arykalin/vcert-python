@@ -22,6 +22,7 @@ def main():
     if FAKE == "true":
         print("Using fake connection")
         conn = ConnectionFake
+        ZONE = "Default"
     elif TOKEN:
         print("Using cloud connection")
         ZONE = environ['CLOUDZONE']
@@ -55,7 +56,7 @@ def main():
         )
 
     conn.request_cert(request, ZONE)
-    conn._get_cert_status(request.id)
+    conn._get_cert_status(request)
     while True:
         cert = conn.retrieve_cert(request)
         if cert:
@@ -63,7 +64,7 @@ def main():
         else:
             time.sleep(5)
     print(cert)
-    print(request.private_key)
+    print(request.private_key_pem)
     f = open("/tmp/cert.pem", "w")
     f.write(cert)
     f = open("/tmp/cert.key", "w")

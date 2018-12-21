@@ -3,3 +3,4 @@ requests=2.18.4
 dateutil=2.6.1
 oscrypto
 csrbuilder
+pyopenssl

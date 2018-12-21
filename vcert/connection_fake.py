@@ -4,7 +4,7 @@ import base64
 import time
 from datetime import datetime
 from datetime import timedelta
-from OpenSSL import crypto
+from OpenSSL import crypto  #todo: think about https://github.com/wbond/oscrypto
 from random import randint
 import re
 from http import HTTPStatus
