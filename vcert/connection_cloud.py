@@ -5,7 +5,9 @@ from http import HTTPStatus
 from oscrypto import asymmetric
 from csrbuilder import CSRBuilder, pem_armor_csr
 from .errors import VenafiConnectionError, ServerUnexptedBehavior, ClientBadData,CertificateRequestError
-from .common import Zone, CertificateRequest, Certificate, CommonConnection, Policy, ZoneConfig
+from .common import Zone, CertificateRequest, CommonConnection, Policy, ZoneConfig
+from pprint import pprint
+
 
 class CertStatuses:
     REQUESTED = 'REQUESTED'
@@ -46,6 +48,13 @@ TOKEN_HEADER_NAME = "tppl-api-key"
 MIME_JSON = "application/json"
 MINE_TEXT = "text/plain"
 MINE_ANY = "*/*"
+
+
+class CertificateStatusResponse:
+    def __init__(self, d):
+        self.status = d['status']
+        self.subject = d['subjectDN']
+        self.zoneId = d['zoneId']
 
 
 # todo: maybe move this function
@@ -93,10 +102,11 @@ class CloudConnection(CommonConnection):
             log.error("unexpected content type: %s for request %s" % (content_type, r.request.url))
             raise ServerUnexptedBehavior
 
-    def _get_cert_status(self, request_id):
-        status, data = self._get(URLS.CERTIFICATE_STATUS % request_id)
+    def _get_cert_status(self, request):
+        status, data = self._get(URLS.CERTIFICATE_STATUS % request)
         if status == HTTPStatus.OK:
-            return Certificate.from_server_response(data)
+            request_status = CertificateStatusResponse(data)
+
 
     def _get_policy_by_ids(self, policy_ids):
         policy = Policy()
@@ -150,7 +160,7 @@ class CloudConnection(CommonConnection):
         status, data = self._post(URLS.CERTIFICATE_REQUESTS, data={"certificateSigningRequest": request.csr, "zoneId": z.id})
         if status == HTTPStatus.CREATED:
             request.id = data['certificateRequests'][0]['id']
-            return request
+            return True
         else:
             log.error("unexpected server response %s: %s", status, data)
             raise ServerUnexptedBehavior
@@ -190,6 +200,14 @@ class CloudConnection(CommonConnection):
         raise NotImplementedError
 
     def renew_cert(self, request):
+        if not request.id and not request.thumbprint:
+            log.error("request id or thumbprint must be specified for renewing certificate")
+            raise ClientBadData
+        if request.thumbprint and not request.id:
+            self.search_by_thumbprint(request)
+        self._get_cert_status(request.id)
+
+    def search_by_thumbprint(self, request):
         raise NotImplementedError
 
     def read_zone_conf(self, tag):

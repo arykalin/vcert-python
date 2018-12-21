@@ -181,8 +181,8 @@ class CertificateRequest:
                  email_addresses="",
                  ip_addresses=[],
                  attributes=None,
-                 signature_algorithm=None,
-                 public_key_algorithm=None,
+                 signature_algorithm=None,  # todo: think: maybe remove
+                 public_key_algorithm=None,  # todo: think: maybe remove
                  key_type=KeyTypes.RSA,
                  key_length=2048,
                  key_curve=None,  #todo: default curve
@@ -192,7 +192,8 @@ class CertificateRequest:
                  csr=None,
                  friendly_name=None,
                  chain_option="first",
-                 common_name=None):
+                 common_name=None,
+                 thumbprint=None):
 
         self.csr = csr
         self.chain_option = chain_option
@@ -222,6 +223,7 @@ class CertificateRequest:
         self.id = id
         self.status = status
         self.common_name = common_name
+        self.thumbprint = thumbprint
 
     def build_csr(self):
         if not self.private_key:
@@ -260,16 +262,6 @@ class CertificateRequest:
         return asymmetric.dump_private_key(self.private_key,None,"pem").decode()
 
 
-class Certificate:
-    def __init__(self, id, status):
-        self.id = id
-        self.status = status
-
-    @classmethod
-    def from_server_response(cls, d):
-        return cls(d['id'], d['status'])
-
-
 class CommonConnection:
     def _get_cert_status(self, request_id):
         raise NotImplementedError
@@ -304,7 +296,7 @@ class CommonConnection:
         """
         :param CertificateRequest request: Certitficate in PEM format
         :param str zone: Venafi zone tag name
-        :rtype CertificateRequest
+        :rtype bool : Success
         """
         raise NotImplementedError
 
@@ -318,6 +310,9 @@ class CommonConnection:
         raise NotImplementedError
 
     def renew_cert(self, request):
+        """
+        :param CertificateRequest request:
+        """
         raise NotImplementedError
 
     def read_zone_conf(self, tag):
