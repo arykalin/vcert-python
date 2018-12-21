@@ -12,8 +12,10 @@ from .errors import ServerUnexptedBehavior, ClientBadData, CertificateRequestErr
 from .common import CommonConnection
 import uuid
 from .common import CommonConnection, Zone
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
 
-issuerCert = """
+ROOT_CA = """
 -----BEGIN CERTIFICATE-----
 MIID1TCCAr2gAwIBAgIJAIOVTvMIMD7OMA0GCSqGSIb3DQEBCwUAMIGAMQswCQYD
 VQQGEwJVUzENMAsGA1UECAwEVXRhaDEXMBUGA1UEBwwOU2FsdCBMYWtlIENpdHkx
@@ -39,7 +41,7 @@ lriDCQa4FOwP9/x1OJRXEsSl5YFqBppX5A==
 -----END CERTIFICATE-----
 """
 
-issuerKey = """
+ROOT_CA_KEY = """
 -----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEA0BobDKthxG5SuMfAp2heyDQN/IL9NTEnFJUUl/CkLEQTSQT6
 8M9US7TCxi+FOizIoev2k4Nkovgk7uM0q94aygbhcHyTTL64uphHwcClu99ZQ6DI
@@ -141,13 +143,19 @@ class ConnectionFake(CommonConnection):
         log.debug("Getting certificate status for id %s" % certificate_request.id)
 
         time.sleep(5)
-        notBefore, notAfter = datetime.now(), 90000
+
+        issuerCert = x509.load_pem_x509_certificate(ROOT_CA, default_backend())
+        issuerCert, issuerKey = crypto.load_certificate(crypto.FILETYPE_PEM, ROOT_CA),crypto.load_privatekey("PEM",None,ROOT_CA_KEY)
+        validityPeriod = datetime.now(), 90000
+        serial = randint(1, (159<<1) -1)
+
+        notBefore, notAfter = validityPeriod
         cert = crypto.X509()
-        cert.set_serial_number(randint(1, (159<<1) -1))
+        cert.set_serial_number(serial)
         cert.gmtime_adj_notBefore(notBefore)
         cert.gmtime_adj_notAfter(notAfter)
-        cert.set_issuer("VCert Test Mode CA")
-        cert.set_subject(certificate_request.subject)
+        cert.set_issuer(caCert.get_subject())
+        cert.set_subject(deviceCsr.get_subject())
         cert.set_pubkey(certificate_request.public_key)
         cert.sign(issuerKey, digest)
         pem = base64.b64decode(pem64)

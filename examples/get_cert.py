@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from vcert import CloudConnection, CertificateRequest, TPPConnection
+from vcert import CloudConnection, CertificateRequest, TPPConnection, ConnectionFake
 import string
 import random
 import logging
@@ -10,13 +10,18 @@ logging.basicConfig(level=logging.INFO)
 
 
 def main():
+    FAKE = environ.get('FAKE')
+
     TOKEN = environ.get('TOKEN')
 
     USER = environ.get('TPPUSER')
     PASSWORD = environ.get('TPPPASSWORD')
     URL = environ.get('TPPURL')
 
-    if TOKEN:
+    if FAKE == "true":
+        print("Using fake connection")
+        conn = ConnectionFake
+    elif TOKEN:
         print("Using cloud connection")
         ZONE = environ['CLOUDZONE']
         conn = CloudConnection(TOKEN)
@@ -34,7 +39,7 @@ def main():
         print('Server offline')
         exit(1)
 
-    if conn == TPPConnection:
+    if USER or FAKE == 'true':
         request = CertificateRequest(
             common_name=randomword(10) + ".venafi.example.com",
             chain_option="first",
@@ -62,7 +67,7 @@ def main():
     f = open("/tmp/cert.key", "w")
     f.write(request.private_key_pem)
 
-    if conn == TPPConnection:
+    if USER:
         renew_id = request.id
         conn.renew_cert(renew_id)
         new_request = CertificateRequest(
