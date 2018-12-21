@@ -83,9 +83,6 @@ class TPPConnection(CommonConnection):
         if status == HTTPStatus.OK:
             return data
 
-    def _get_policy_by_ids(self, policy_ids):
-        for policy_id in policy_ids:
-            status, data = self._get(URLS.POLICIES_BY_ID % policy_id)
 
     def _normalize_and_verify_base_url(self):
         u = self._base_url
