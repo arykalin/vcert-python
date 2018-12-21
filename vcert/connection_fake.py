@@ -146,7 +146,9 @@ class ConnectionFake(CommonConnection):
         time.sleep(1)
 
         issuerCert = x509.load_pem_x509_certificate(ROOT_CA, default_backend())
-        issuerCert, issuerKey = crypto.load_certificate(crypto.FILETYPE_PEM, ROOT_CA),crypto.load_privatekey("PEM",None,ROOT_CA_KEY)
+        issuerCert, issuerKey = crypto.load_certificate(crypto.FILETYPE_PEM, ROOT_CA.encode()),\
+                                crypto.load_privatekey("PEM",
+                                                                                                              None,ROOT_CA_KEY)
         validityPeriod = datetime.now(), 90000
         serial = randint(1, (159<<1) -1)
 
