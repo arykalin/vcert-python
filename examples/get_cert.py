@@ -68,6 +68,7 @@ def main():
     f.write(cert)
     f = open("/tmp/cert.key", "w")
     f.write(request.private_key_pem)
+    f.close()
 
     if USER:
         print("Trying to renew certificate")
@@ -84,8 +85,8 @@ def main():
             else:
                 time.sleep(5)
         print(new_cert)
-        f = open("/tmp/new_cert.pem", "w")
-        f.write(new_cert)
+        fn = open("/tmp/new_cert.pem", "w")
+        fn.write(new_cert)
 
 def randomword(length):
     letters = string.ascii_lowercase
