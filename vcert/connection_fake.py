@@ -8,7 +8,8 @@ from OpenSSL import crypto
 from random import randint
 import re
 from http import HTTPStatus
-from .errors import ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError, CertificateRenewError
+from .errors import ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError, \
+    CertificateRenewError
 import uuid
 from .common import CommonConnection, Zone
 from cryptography import x509
@@ -69,6 +70,7 @@ ZEU0fw9VRRyQVwUwjAaLbIuME4cKhGjcJUvGPLftNamTlFS/TvtE1fwauGBXYc5o
 wWh1aVElz5xMF+SnGUCW7t02dvhK0i29mOfx/eG5jkSm33NvVBq/IA==
 -----END RSA PRIVATE KEY-----
 """
+
 
 def fake_user(email=None):
     fake_user_email = email or "test@example.com"
@@ -145,12 +147,10 @@ class ConnectionFake(CommonConnection):
 
         time.sleep(1)
 
-        issuerCert = x509.load_pem_x509_certificate(ROOT_CA, default_backend())
-        issuerCert, issuerKey = crypto.load_certificate(crypto.FILETYPE_PEM, ROOT_CA.encode()),\
-                                crypto.load_privatekey("PEM",
-                                                                                                              None,ROOT_CA_KEY)
+        issuerCert, issuerKey = crypto.load_certificate(crypto.FILETYPE_PEM, ROOT_CA.encode()), \
+                                crypto.load_privatekey(crypto.FILETYPE_PEM, buffer=ROOT_CA_KEY.encode(),passphrase=None)
         validityPeriod = datetime.now(), 90000
-        serial = randint(1, (159<<1) -1)
+        serial = randint(1, (159 << 1) - 1)
 
         notBefore, notAfter = validityPeriod
         cert = crypto.X509()
@@ -164,7 +164,6 @@ class ConnectionFake(CommonConnection):
         pem = base64.b64decode(pem64)
         # TODO: return private key too
         return pem.decode()
-
 
     def revoke_cert(self, request):
         raise NotImplementedError
