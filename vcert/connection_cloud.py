@@ -7,6 +7,11 @@ from csrbuilder import CSRBuilder, pem_armor_csr
 from .errors import VenafiConnectionError, ServerUnexptedBehavior, ClientBadData,CertificateRequestError
 from .common import Zone, CertificateRequest, Certificate, CommonConnection, Policy, ZoneConfig
 
+class CertStatuses:
+    REQUESTED = 'REQUESTED'
+    PENDING = 'PENDING'
+    FAILED = 'FAILED'
+    ISSUED = 'ISSUED'
 
 class URLS:
     CLOUDURL = environ.get('CLOUDURL')
@@ -160,11 +165,22 @@ class CloudConnection(CommonConnection):
             log.error("chain option %s is not valid" % request.chain_option)
             raise ClientBadData
         # todo: make search by thumbprint
-        status, data = self._get(url)
-        if status == HTTPStatus.OK:
-            return data
-        elif status == HTTPStatus.CONFLICT:
-            raise CertificateRequestError
+        status, data = self._get(URLS.CERTIFICATE_STATUS % request.id)
+        if status == HTTPStatus.OK or HTTPStatus.CONFLICT:
+            if data['status'] == CertStatuses.PENDING or data['status'] == CertStatuses.REQUESTED:
+                log.debug("Certificate status is %s." % data['status'])
+                return None
+            elif data['status'] == CertStatuses.FAILED:
+                log.debug("Status is %s. Returning data for debug" % data['status'])
+                return "Certificate FAILED"
+            elif data['status'] == CertStatuses.ISSUED:
+                status, data = self._get(url)
+                if status == HTTPStatus.OK:
+                    return data
+                else:
+                    raise ServerUnexptedBehavior
+            else:
+                raise ServerUnexptedBehavior
         else:
             raise ServerUnexptedBehavior
 

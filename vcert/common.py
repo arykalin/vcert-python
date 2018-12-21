@@ -13,10 +13,6 @@ MINE_HTML = "text/html"
 MINE_TEXT = "text/plain"
 MINE_ANY = "*/*"
 
-class CertStatuses:
-    REQUESTED = 'REQUESTED'
-    PENDING = 'PENDING'
-
 
 class CertField(str):
     def __init__(self, *args, **kwargs):

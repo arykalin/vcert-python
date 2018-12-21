@@ -44,7 +44,7 @@ def main():
 
     request = conn.request_cert(request, ZONE)
     # TODO: workaround because we need to wait a bit untill certificate request will be created in cloud
-    time.sleep(30)
+    # time.sleep(30)
     while True:
         cert = conn.retrieve_cert(request)
         if cert:
@@ -58,21 +58,22 @@ def main():
     f = open("/tmp/cert.key", "w")
     f.write(request.private_key_pem)
 
-    renew_id = request.id
-    conn.renew_cert(renew_id)
-    new_request = CertificateRequest(
-        id=renew_id,
-        chain_option="first",
-    )
-    while True:
-        new_cert = conn.retrieve_cert(new_request)
-        if new_cert:
-            break
-        else:
-            time.sleep(5)
-    print(new_cert)
-    f = open("/tmp/new_cert.pem", "w")
-    f.write(new_cert)
+    if USER:
+        renew_id = request.id
+        conn.renew_cert(renew_id)
+        new_request = CertificateRequest(
+            id=renew_id,
+            chain_option="first",
+        )
+        while True:
+            new_cert = conn.retrieve_cert(new_request)
+            if new_cert:
+                break
+            else:
+                time.sleep(5)
+        print(new_cert)
+        f = open("/tmp/new_cert.pem", "w")
+        f.write(new_cert)
 
 def randomword(length):
    letters = string.ascii_lowercase
