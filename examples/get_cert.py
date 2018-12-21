@@ -55,7 +55,6 @@ def main():
         )
 
     conn.request_cert(request, ZONE)
-    conn._get_cert_status(request.id)
     while True:
         cert = conn.retrieve_cert(request)
         if cert:
@@ -63,13 +62,13 @@ def main():
         else:
             time.sleep(5)
     print(cert)
-    print(request.private_key)
+    print(request.private_key_pem)
     f = open("/tmp/cert.pem", "w")
     f.write(cert)
     f = open("/tmp/cert.key", "w")
     f.write(request.private_key_pem)
 
-    if USER or TOKEN:
+    if USER:
         renew_id = request.id
         conn.renew_cert(renew_id)
         new_request = CertificateRequest(
@@ -85,7 +84,22 @@ def main():
         print(new_cert)
         f = open("/tmp/new_cert.pem", "w")
         f.write(new_cert)
-
+    elif  TOKEN:
+        renew_id = request.thumbprint
+        conn.renew_cert(renew_id)
+        new_request = CertificateRequest(
+            id=renew_id,
+            chain_option="first",
+        )
+        while True:
+            new_cert = conn.retrieve_cert(new_request)
+            if new_cert:
+                break
+            else:
+                time.sleep(5)
+        print(new_cert)
+        f = open("/tmp/new_cert.pem", "w")
+        f.write(new_cert)
 
 def randomword(length):
     letters = string.ascii_lowercase
