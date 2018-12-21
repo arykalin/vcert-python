@@ -21,8 +21,8 @@ def main():
 
     if FAKE == "true":
         print("Using fake connection")
-        conn = ConnectionFake
-        ZONE = "Default"
+        conn = ConnectionFake()
+        ZONE = environ['TPPZONE']
     elif TOKEN:
         print("Using cloud connection")
         ZONE = environ['CLOUDZONE']
@@ -56,7 +56,7 @@ def main():
         )
 
     conn.request_cert(request, ZONE)
-    conn._get_cert_status(request)
+
     while True:
         cert = conn.retrieve_cert(request)
         if cert:
@@ -70,7 +70,8 @@ def main():
     f = open("/tmp/cert.key", "w")
     f.write(request.private_key_pem)
 
-    if USER or TOKEN:
+    if USER:
+        print("Trying to renew certificate")
         renew_id = request.id
         conn.renew_cert(renew_id)
         new_request = CertificateRequest(
@@ -86,7 +87,6 @@ def main():
         print(new_cert)
         f = open("/tmp/new_cert.pem", "w")
         f.write(new_cert)
-
 
 def randomword(length):
     letters = string.ascii_lowercase

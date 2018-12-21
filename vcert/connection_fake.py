@@ -8,8 +8,8 @@ from OpenSSL import crypto  #todo: think about https://github.com/wbond/oscrypto
 from random import randint
 import re
 from http import HTTPStatus
-from .errors import ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError, CertificateRenewError
-from .common import CommonConnection
+from .errors import ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError, \
+    CertificateRenewError
 import uuid
 from .common import CommonConnection, Zone
 from cryptography import x509
@@ -71,6 +71,7 @@ wWh1aVElz5xMF+SnGUCW7t02dvhK0i29mOfx/eG5jkSm33NvVBq/IA==
 -----END RSA PRIVATE KEY-----
 """
 
+
 def fake_user(email=None):
     fake_user_email = email or "test@example.com"
     fake_user_uuid = str(uuid.uuid4())
@@ -112,9 +113,10 @@ class ConnectionFake(CommonConnection):
         """
         todo: docs
         """
+        self.status = "200"
 
     def ping(self):
-        return status == HTTPStatus.OK and "Ready"
+        return self.status
 
     def auth(self):
         return fake_user()
@@ -128,9 +130,10 @@ class ConnectionFake(CommonConnection):
     def request_cert(self, request, zone):
         if not request.csr:
             request.build_csr()
-            data = {"PolicyDN": self._get_policy_dn(zone),
+            data = {"PolicyDN": zone,
                     "PKCS10": request.csr,
                     "ObjectName": request.friendly_name,
+                    "CertificateDN": request.friendly_name,
                     "DisableAutomaticRenewal": "true"}
             request.id = data['CertificateDN']
             log.debug("Certificate sucessfully requested with request id %s." % request.id)
@@ -142,12 +145,12 @@ class ConnectionFake(CommonConnection):
     def retrieve_cert(self, certificate_request):
         log.debug("Getting certificate status for id %s" % certificate_request.id)
 
-        time.sleep(5)
+        time.sleep(1)
 
-        issuerCert = x509.load_pem_x509_certificate(ROOT_CA, default_backend())
-        issuerCert, issuerKey = crypto.load_certificate(crypto.FILETYPE_PEM, ROOT_CA),crypto.load_privatekey("PEM",None,ROOT_CA_KEY)
+        issuerCert, issuerKey = crypto.load_certificate(crypto.FILETYPE_PEM, ROOT_CA.encode()), \
+                                crypto.load_privatekey(crypto.FILETYPE_PEM, buffer=ROOT_CA_KEY.encode(),passphrase=None)
         validityPeriod = datetime.now(), 90000
-        serial = randint(1, (159<<1) -1)
+        serial = randint(1, (159 << 1) - 1)
 
         notBefore, notAfter = validityPeriod
         cert = crypto.X509()
@@ -161,7 +164,6 @@ class ConnectionFake(CommonConnection):
         pem = base64.b64decode(pem64)
         # TODO: return private key too
         return pem.decode()
-
 
     def revoke_cert(self, request):
         raise NotImplementedError
