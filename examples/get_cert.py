@@ -44,7 +44,6 @@ def main():
     if USER or FAKE == 'true':
         request = CertificateRequest(
             common_name=randomword(10) + ".venafi.example.com",
-            chain_option="first",
             dns_names=["www.client.venafi.example.com", "ww1.client.venafi.example.com"],
             email_addresses="e1@venafi.example.com, e2@venafi.example.com",
             ip_addresses=["127.0.0.1", "192.168.1.1"]
@@ -52,7 +51,6 @@ def main():
     else:
         request = CertificateRequest(
             common_name=randomword(10) + ".venafi.example.com",
-            chain_option="first",
         )
 
     conn.request_cert(request, ZONE)
@@ -75,7 +73,6 @@ def main():
         conn.renew_cert(request)
         new_request = CertificateRequest(
             id=request.id,
-            chain_option="first",
         )
         while True:
             new_cert = conn.retrieve_cert(new_request)
