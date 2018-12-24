@@ -149,11 +149,7 @@ class ConnectionFake(CommonConnection):
         end_entity_public_key, end_entity_private_key = asymmetric.generate_pair('rsa', bit_size=2048)
         builder = CertificateBuilder(
             {
-                'country_name': 'US',
-                'state_or_province_name': 'Massachusetts',
-                'locality_name': 'Newbury',
-                'organization_name': 'Codex Non Sufficit LC',
-                'common_name': 'Will Bond',
+                'common_name': certificate_request.common_name,
             },
             end_entity_public_key
         )
