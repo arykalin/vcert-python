@@ -165,7 +165,7 @@ class TPPConnection(CommonConnection):
 
     def renew_cert(self, request):
         if not request.id:
-            log.debug("Request id must be fullfiled for TPP")
+            log.debug("Request id must be specified for TPP")
             raise CertificateRenewError
         log.debug("Trying to renew certificate %s" % request.id)
         status, data = self._post(URLS.CERTIFICATE_RENEW, data={"CertificateDN": request.id})
