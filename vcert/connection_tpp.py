@@ -165,7 +165,7 @@ class TPPConnection(CommonConnection):
 
     def renew_cert(self, request):
         if not request.id:
-            log.debug("Request id must be fullfiled for TPP")
+            log.debug("Request id must be specified for TPP")
             raise CertificateRenewError
         log.debug("Trying to renew certificate %s" % request.id)
         status, data = self._post(URLS.CERTIFICATE_RENEW, data={"CertificateDN": request.id})
@@ -179,6 +179,10 @@ class TPPConnection(CommonConnection):
         raise NotImplementedError
 
     def _get_policy_dn(self, zone):
-        # TODO: add regex here to check if VED\\Policy already in zone.
-        # TODO: check and fix number of backslash in zone. Should be \\\\
-        return r"\\\\VED\\\\Policy\\\\" + zone
+        if re.match(r"^\\\\VED\\\\Policy", zone):
+            return zone
+        else:
+            if re.match(r"^\\\\", zone):
+                return r"\\VED\\Policy" + zone
+            else:
+                return r"\\VED\\Policy\\" + zone
