@@ -166,8 +166,4 @@ class ConnectionFake(CommonConnection):
 
     def renew_cert(self, certificate_request_id):
         log.debug("Trying to renew certificate %s" % certificate_request_id)
-        status, data = self._post(URLS.CERTIFICATE_RENEW, data={"CertificateDN": certificate_request_id})
-        if not data['Success']:
-            raise CertificateRenewError
-        else:
-            return certificate_request_id
+        raise NotImplementedError
