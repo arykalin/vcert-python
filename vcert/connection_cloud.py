@@ -103,10 +103,12 @@ class CloudConnection(CommonConnection):
             raise ServerUnexptedBehavior
 
     def _get_cert_status(self, request):
-        status, data = self._get(URLS.CERTIFICATE_STATUS % request)
+        status, data = self._get(URLS.CERTIFICATE_STATUS % request.id)
         if status == HTTPStatus.OK:
             request_status = CertificateStatusResponse(data)
-
+            return request_status
+        else:
+            raise ServerUnexptedBehavior
 
     def _get_policy_by_ids(self, policy_ids):
         policy = Policy()
@@ -205,7 +207,7 @@ class CloudConnection(CommonConnection):
             raise ClientBadData
         if request.thumbprint and not request.id:
             self.search_by_thumbprint(request)
-        self._get_cert_status(request.id)
+        self._get_cert_status(request)
 
     def search_by_thumbprint(self, request):
         raise NotImplementedError

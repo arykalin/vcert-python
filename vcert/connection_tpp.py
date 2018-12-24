@@ -78,8 +78,8 @@ class TPPConnection(CommonConnection):
             raise ClientBadData
         return self.process_server_response(r)
 
-    def _get_cert_status(self, request_id):
-        status, data = self._post(URLS.CERTIFICATE_RETRIEVE % request_id)
+    def _get_cert_status(self, request):
+        status, data = self._post(URLS.CERTIFICATE_RETRIEVE % request.id)
         if status == HTTPStatus.OK:
             return data
 

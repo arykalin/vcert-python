@@ -257,7 +257,7 @@ class CertificateRequest:
 
         builder.hash_algo = "sha256"
         builder.subject_alt_domains = [self.common_name]
-        self.csr = pem_armor_csr(builder.build(self.private_key))
+        self.csr = pem_armor_csr(builder.build(self.private_key)).decode()
         return
 
     @property
@@ -266,7 +266,10 @@ class CertificateRequest:
 
 
 class CommonConnection:
-    def _get_cert_status(self, request_id):
+    def _get_cert_status(self, request):
+        """
+        :param CertificateRequest request:
+        """
         raise NotImplementedError
 
     def _get_policy_by_ids(self, policy_ids):
@@ -327,22 +330,6 @@ class CommonConnection:
 
     def import_cert(self, request):
         raise NotImplementedError
-
-    def make_request_and_wait_certificate(self, request, zone):
-        """
-        :param CertificateRequest csr:
-        :param str zone:
-        """
-        request = self.request_cert(request, zone)
-        log.info("Send certificate request, got pickupId: %s" % request.id)
-        while True:
-            time.sleep(10)
-            log.info("Checking status for %s" % request.id)
-            cert = self._get_cert_status(request.id)
-            if cert.status not in (CertStatuses.REQUESTED, CertStatuses.PENDING):
-                break
-        log.info("Status: %s" % cert.status)
-        return cert
 
     @staticmethod
     def process_server_response(r):

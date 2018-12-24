@@ -22,7 +22,7 @@ def main():
     if FAKE == "true":
         print("Using fake connection")
         conn = ConnectionFake()
-        ZONE = environ['TPPZONE']
+        ZONE = "Default"
     elif TOKEN:
         print("Using cloud connection")
         ZONE = environ['CLOUDZONE']
