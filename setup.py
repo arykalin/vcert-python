@@ -8,7 +8,7 @@ setup(name='vcert-python',
       url="https://github.com/Venafi/vcert-python",
       packages=['vcert'],
       modules=['vcert'],
-      install_requires=['requests', 'cryptography'],  # todo: google about versions
+      install_requires=['requests', 'dateutil', 'oscrypto', 'certbuilder', 'csrbuilder', 'pyopenssl'],  # todo: google about versions
       description='Python bindings for Venafi TPP/Venfi Cloud API.',
       author='Denis Subbotin',
       author_email='denis.subbotin@venafi.com',
@@ -20,3 +20,4 @@ setup(name='vcert-python',
           'Programming Language :: Python :: 3.6',
           'Operating System :: OS Independent',
       ])
+
