@@ -1,5 +1,5 @@
 requests=2.18.4
-dateutil=2.6.1
+python-dateutil=2.6.1
 oscrypto
 certbuilder
 csrbuilder
