@@ -18,11 +18,11 @@ class ClientBadData(BadData):
     pass
 
 
-class CertificateRequestError(VenafiError):
+class CertificateRequestError(ServerUnexptedBehavior):
     pass
 
 
-class CertificateRenewError(VenafiError):
+class CertificateRenewError(ServerUnexptedBehavior):
     pass
 
 
