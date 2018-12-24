@@ -5,6 +5,8 @@ import time
 from datetime import datetime
 from datetime import timedelta
 from OpenSSL import crypto  #todo: think about https://github.com/wbond/oscrypto
+from oscrypto import asymmetric
+from certbuilder import CertificateBuilder, pem_armor_certificate
 from random import randint
 import re
 from http import HTTPStatus
@@ -15,8 +17,7 @@ from .common import CommonConnection, Zone
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 
-ROOT_CA = """
------BEGIN CERTIFICATE-----
+ROOT_CA = b"""-----BEGIN CERTIFICATE-----
 MIID1TCCAr2gAwIBAgIJAIOVTvMIMD7OMA0GCSqGSIb3DQEBCwUAMIGAMQswCQYD
 VQQGEwJVUzENMAsGA1UECAwEVXRhaDEXMBUGA1UEBwwOU2FsdCBMYWtlIENpdHkx
 DzANBgNVBAoMBlZlbmFmaTEbMBkGA1UECwwSTk9UIEZPUiBQUk9EVUNUSU9OMRsw
@@ -41,8 +42,7 @@ lriDCQa4FOwP9/x1OJRXEsSl5YFqBppX5A==
 -----END CERTIFICATE-----
 """
 
-ROOT_CA_KEY = """
------BEGIN RSA PRIVATE KEY-----
+ROOT_CA_KEY = b"""-----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEA0BobDKthxG5SuMfAp2heyDQN/IL9NTEnFJUUl/CkLEQTSQT6
 8M9US7TCxi+FOizIoev2k4Nkovgk7uM0q94aygbhcHyTTL64uphHwcClu99ZQ6DI
 wzDH2gREsLWfj+KXw4bPsne+5tGxv2+0jG2at5orp/nOQWYD1C1HB6ZQqvP3PypD
@@ -145,25 +145,25 @@ class ConnectionFake(CommonConnection):
     def retrieve_cert(self, certificate_request):
         log.debug("Getting certificate status for id %s" % certificate_request.id)
 
-        time.sleep(1)
+        time.sleep(0.1)
+        end_entity_public_key, end_entity_private_key = asymmetric.generate_pair('rsa', bit_size=2048)
+        builder = CertificateBuilder(
+            {
+                'country_name': 'US',
+                'state_or_province_name': 'Massachusetts',
+                'locality_name': 'Newbury',
+                'organization_name': 'Codex Non Sufficit LC',
+                'common_name': 'Will Bond',
+            },
+            end_entity_public_key
+        )
 
-        issuerCert, issuerKey = crypto.load_certificate(crypto.FILETYPE_PEM, ROOT_CA.encode()), \
-                                crypto.load_privatekey(crypto.FILETYPE_PEM, buffer=ROOT_CA_KEY.encode(),passphrase=None)
-        validityPeriod = datetime.now(), 90000
-        serial = randint(1, (159 << 1) - 1)
+        root_ca_certificate = asymmetric.load_certificate(ROOT_CA)
+        root_ca_private_key = asymmetric.load_private_key(ROOT_CA_KEY)
 
-        notBefore, notAfter = validityPeriod
-        cert = crypto.X509()
-        cert.set_serial_number(serial)
-        cert.gmtime_adj_notBefore(notBefore)
-        cert.gmtime_adj_notAfter(notAfter)
-        cert.set_issuer(caCert.get_subject())
-        cert.set_subject(deviceCsr.get_subject())
-        cert.set_pubkey(certificate_request.public_key)
-        cert.sign(issuerKey, digest)
-        pem = base64.b64decode(pem64)
-        # TODO: return private key too
-        return pem.decode()
+        builder.issuer = root_ca_certificate
+        end_entity_certificate = builder.build(root_ca_private_key)
+        return(pem_armor_certificate(end_entity_certificate).decode())
 
     def revoke_cert(self, request):
         raise NotImplementedError
