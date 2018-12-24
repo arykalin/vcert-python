@@ -4,7 +4,7 @@ import logging as log
 from http import HTTPStatus
 from oscrypto import asymmetric
 from csrbuilder import CSRBuilder, pem_armor_csr
-from .errors import VenafiConnectionError, ServerUnexptedBehavior, ClientBadData,CertificateRequestError
+from .errors import VenafiConnectionError, ServerUnexptedBehavior, ClientBadData,CertificateRequestError, CertificateRenewError
 from .common import Zone, CertificateRequest, CommonConnection, Policy, ZoneConfig
 from pprint import pprint
 
@@ -55,6 +55,7 @@ class CertificateStatusResponse:
         self.status = d['status']
         self.subject = d['subjectDN']
         self.zoneId = d['zoneId']
+        self.manage_id = d.get('managedCertificateId')
 
 
 # todo: maybe move this function
@@ -165,7 +166,7 @@ class CloudConnection(CommonConnection):
             return True
         else:
             log.error("unexpected server response %s: %s", status, data)
-            raise ServerUnexptedBehavior
+            raise CertificateRequestError
 
     def retrieve_cert(self, request):
         url = URLS.CERTIFICATE_RETRIEVE % request.id
@@ -201,13 +202,48 @@ class CloudConnection(CommonConnection):
         # not supported in cloud
         raise NotImplementedError
 
-    def renew_cert(self, request):
-        if not request.id and not request.thumbprint:
-            log.error("request id or thumbprint must be specified for renewing certificate")
+    def renew_cert(self, prev_cert_id=None, thumbprint=None, manage_id=None, csr=None):
+        zone = None
+        if not prev_cert_id and not thumbprint and not manage_id:
+            log.error("prev_cert_id or thumbprint or manage_id must be specified for renewing certificate")
             raise ClientBadData
-        if request.thumbprint and not request.id:
-            self.search_by_thumbprint(request)
-        self._get_cert_status(request)
+        if thumbprint:
+            request = self.search_by_thumbprint(thumbprint)
+            prev_cert_id = request.id
+        if prev_cert_id:
+            prev_request = self._get_cert_status(CertificateRequest(id=prev_cert_id))
+            manage_id = prev_request.manage_id
+            zone = prev_request.zoneId
+        if not manage_id:
+            log.error("Can`t find manage_id")
+            raise ClientBadData
+        status, data = self._get(URLS.MANAGED_CERTIFICATE_BY_ID % manage_id)
+        if status == HTTPStatus.OK:
+            if prev_cert_id and prev_cert_id != data['latestCertificateRequestId']:
+                log.error(("Certificate under requestId %s is not the latest under ManagedCertificateId %s. "
+                           "The latest request is %s. This error may happen when revoked certificate is "
+                           "requested to be renewed.") % (prev_cert_id, manage_id, data['latestCertificateRequestId']))
+                raise ClientBadData
+            prev_cert_id = data['latestCertificateRequestId']
+        else:
+            raise ServerUnexptedBehavior
+        if not zone:
+            prev_request = self._get_cert_status(CertificateRequest(id=prev_cert_id))
+            zone = prev_request.zoneId
+        d = {"existingManagedCertificateId": manage_id, "zoneId": zone}
+        if csr:
+            d["certificateSigningRequest"] = csr
+            d["reuseCSR"] = False
+        else:
+            d["reuseCSR"] = True
+
+        status, data = self._post(URLS.CERTIFICATE_REQUESTS, data=d)
+        if status == HTTPStatus.CREATED:
+            request = CertificateRequest(id=data['certificateRequests'][0]['id'])
+            return request
+        else:
+            log.error("server unexpected status %s" % status)
+            raise CertificateRenewError
 
     def search_by_thumbprint(self, request):
         raise NotImplementedError
