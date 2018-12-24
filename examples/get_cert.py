@@ -70,12 +70,11 @@ def main():
     f.write(request.private_key_pem)
     f.close()
 
-    if USER:
+    if USER or TOKEN:
         print("Trying to renew certificate")
-        renew_id = request.id
-        conn.renew_cert(renew_id)
+        conn.renew_cert(request)
         new_request = CertificateRequest(
-            id=renew_id,
+            id=request.id,
             chain_option="first",
         )
         while True:

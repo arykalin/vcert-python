@@ -163,13 +163,14 @@ class TPPConnection(CommonConnection):
     def revoke_cert(self, request):
         raise NotImplementedError
 
-    def renew_cert(self, certificate_request_id):
-        log.debug("Trying to renew certificate %s" % certificate_request_id)
-        status, data = self._post(URLS.CERTIFICATE_RENEW, data={"CertificateDN": certificate_request_id})
+    def renew_cert(self, request):
+        if not request.id:
+            log.debug("Request id must be fullfiled for TPP")
+            raise CertificateRenewError
+        log.debug("Trying to renew certificate %s" % request.id)
+        status, data = self._post(URLS.CERTIFICATE_RENEW, data={"CertificateDN": request.id})
         if not data['Success']:
             raise CertificateRenewError
-        else:
-            return certificate_request_id
 
     def read_zone_conf(self, tag):
         raise NotImplementedError

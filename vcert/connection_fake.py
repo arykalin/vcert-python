@@ -1,21 +1,12 @@
-import requests
 import logging as log
-import base64
 import time
-from datetime import datetime
-from datetime import timedelta
-from OpenSSL import crypto  #todo: think about https://github.com/wbond/oscrypto
 from oscrypto import asymmetric
 from certbuilder import CertificateBuilder, pem_armor_certificate
-from random import randint
-import re
 from http import HTTPStatus
 from .errors import ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError, \
     CertificateRenewError
 import uuid
 from .common import CommonConnection, Zone
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
 
 ROOT_CA = b"""-----BEGIN CERTIFICATE-----
 MIID1TCCAr2gAwIBAgIJAIOVTvMIMD7OMA0GCSqGSIb3DQEBCwUAMIGAMQswCQYD
@@ -165,5 +156,5 @@ class ConnectionFake(CommonConnection):
         raise NotImplementedError
 
     def renew_cert(self, certificate_request_id):
-        log.debug("Trying to renew certificate %s" % certificate_request_id)
+        log.debug("Renew is not supported in test mode.")
         raise NotImplementedError
