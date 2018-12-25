@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, generators, unicode_literals, print_function, nested_scopes, with_statement
 import requests
-from os import environ
 import logging as log
 from .http import HTTPStatus
 from .errors import (VenafiConnectionError, ServerUnexptedBehavior, ClientBadData, CertificateRequestError,
@@ -16,11 +15,7 @@ class CertStatuses:
 
 
 class URLS:
-    CLOUDURL = environ.get('CLOUDURL')
-    if CLOUDURL:
-        API_BASE_URL = CLOUDURL
-    else:
-        API_BASE_URL = "https://api.venafi.cloud/v1/"
+    API_BASE_URL = "https://api.venafi.cloud/v1/"
 
     USER_ACCOUNTS = "useraccounts"
     PING = "ping"

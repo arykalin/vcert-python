@@ -99,12 +99,13 @@ def fake_zone(zone=None):
     return z
 
 
-class ConnectionFake(CommonConnection):
+class FakeConnection(CommonConnection):
     def __init__(self, *args, **kwargs):
         """
         todo: docs
         """
         self.status = "200"
+        self._base_url = "fake"
 
     def ping(self):
         return self.status

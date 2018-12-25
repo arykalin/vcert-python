@@ -1,6 +1,6 @@
 from .connection_cloud import CloudConnection
 from .connection_tpp import TPPConnection
-from .connection_fake import ConnectionFake
+from .connection_fake import FakeConnection
 from .common import CertificateRequest, CommonConnection
 
 
@@ -17,7 +17,7 @@ def Connection(url=None, token=None, user=None, password=None):
     :rtype CommonConnection:
     """
     if not (token or url or user or password):
-        return ConnectionFake()
+        return FakeConnection()
     if url and user and password:
         return TPPConnection(user=user, password=password, url=url)
     if token:

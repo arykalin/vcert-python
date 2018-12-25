@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from vcert import CloudConnection, CertificateRequest, TPPConnection, ConnectionFake
+from vcert import CloudConnection, CertificateRequest, TPPConnection, FakeConnection
 import string
 import random
 import logging
@@ -22,7 +22,7 @@ class TestStringMethods(unittest.TestCase):
 
     def test_fake(self):
         print("Using fake connection")
-        conn = ConnectionFake()
+        conn = FakeConnection()
         ZONE = "Default"
         cert_id, pkey=enroll(conn, ZONE)
         # renew(conn, cert_id, pkey)
@@ -49,7 +49,7 @@ def enroll(conn, ZONE):
         print('Server offline')
         exit(1)
 
-    if isinstance(conn, (ConnectionFake or TPPConnection)):
+    if isinstance(conn, (FakeConnection or TPPConnection)):
         request = CertificateRequest(
             common_name=randomword(10) + ".venafi.example.com",
             dns_names=["www.client.venafi.example.com", "ww1.client.venafi.example.com"],

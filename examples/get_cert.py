@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import absolute_import, division, generators, unicode_literals, print_function, nested_scopes, with_statement
 
-from vcert import CloudConnection, CertificateRequest, TPPConnection, ConnectionFake
+from vcert import CertificateRequest, Connection, CloudConnection, FakeConnection
 import string
 import random
 import logging
@@ -13,64 +13,48 @@ logging.getLogger("urllib3").setLevel(logging.ERROR)
 
 
 def main():
-    FAKE = environ.get('FAKE')
+    token = environ.get('TOKEN')
+    user = environ.get('USER')
+    password = environ.get('PASSWORD')
+    url = environ.get('URL')
+    zone = environ.get("ZONE")
+    conn = Connection(url=url, token=token, user=user, password=password)
 
-    TOKEN = environ.get('TOKEN')
-
-    USER = environ.get('TPPUSER')
-    PASSWORD = environ.get('TPPPASSWORD')
-    URL = environ.get('TPPURL')
-
-    if FAKE == "true":
-        print("Using fake connection")
-        conn = ConnectionFake()
-        ZONE = "Default"
-    elif TOKEN:
-        print("Using cloud connection")
-        ZONE = environ['CLOUDZONE']
-        conn = CloudConnection(TOKEN)
-    elif USER and PASSWORD and URL:
-        ZONE = environ['TPPZONE']
-        print("Using TPP conection")
-        conn = TPPConnection(USER, PASSWORD, URL)
-    else:
-        raise Exception("require environment vaiable TOKEN or USER,PASSWORD,URL")
-
-    print("Tring to ping url", URL)
+    print("Tring to ping url %s" % conn._base_url)
     status = conn.ping()
     print("Server online:", status)
     if not status:
-        print('Server offline')
+        print('Server offline - exit')
         exit(1)
 
-    if isinstance(conn, (ConnectionFake or TPPConnection)):
-        request = CertificateRequest(
-            common_name=randomword(10) + ".venafi.example.com",
-            dns_names=["www.client.venafi.example.com", "ww1.client.venafi.example.com"],
-            email_addresses="e1@venafi.example.com, e2@venafi.example.com",
-            ip_addresses=["127.0.0.1", "192.168.1.1"]
-        )
-    else:
-        request = CertificateRequest(
-            common_name=randomword(10) + ".venafi.example.com",
-        )
+    request = CertificateRequest(common_name=randomword(10) + ".venafi.example.com")
+    if not isinstance(conn, CloudConnection):
+        # cloud connection doesn`t support dns, email and ip in CSR
+        request.dns_names = ["www.client.venafi.example.com", "ww1.client.venafi.example.com"],
+        request.email_addresses = "e1@venafi.example.com, e2@venafi.example.com",
+        request.ip_addresses = ["127.0.0.1", "192.168.1.1"]
 
-    conn.request_cert(request, ZONE)
+    # make certificate request
+    conn.request_cert(request, zone)
+
+    # and wait for signing
     while True:
         cert = conn.retrieve_cert(request)
         if cert:
             break
         else:
             time.sleep(5)
-    print(cert)
-    print(request.private_key_pem)
+
+    # after that print cert and key
+    print(cert, request.private_key_pem, sep="\n")
+    # and save into file
     f = open("/tmp/cert.pem", "w")
     f.write(cert)
     f = open("/tmp/cert.key", "w")
     f.write(request.private_key_pem)
-    f.close()
 
-    if isinstance(conn, (CloudConnection or TPPConnection)):
+    if not isinstance(conn, FakeConnection):
+        # fake connection doesn`t support certificate renewing
         print("Trying to renew certificate")
         new_request = CertificateRequest(
             id=request.id,
@@ -85,6 +69,7 @@ def main():
         print(new_cert)
         fn = open("/tmp/new_cert.pem", "w")
         fn.write(new_cert)
+
 
 def randomword(length):
     letters = string.ascii_lowercase
