@@ -41,7 +41,7 @@ def main():
         print('Server offline')
         exit(1)
 
-    if USER or FAKE == 'true':
+    if isinstance(conn, (ConnectionFake or TPPConnection)):
         request = CertificateRequest(
             common_name=randomword(10) + ".venafi.example.com",
             dns_names=["www.client.venafi.example.com", "ww1.client.venafi.example.com"],
@@ -68,7 +68,7 @@ def main():
     f.write(request.private_key_pem)
     f.close()
 
-    if USER or TOKEN:
+    if isinstance(conn, (CloudConnection or TPPConnection)):
         print("Trying to renew certificate")
         new_request = CertificateRequest(
             id=request.id,

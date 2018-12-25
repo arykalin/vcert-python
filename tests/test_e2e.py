@@ -49,7 +49,7 @@ def enroll(conn, ZONE):
         print('Server offline')
         exit(1)
 
-    if USER or FAKE == 'true':
+    if isinstance(conn, (ConnectionFake or TPPConnection)):
         request = CertificateRequest(
             common_name=randomword(10) + ".venafi.example.com",
             dns_names=["www.client.venafi.example.com", "ww1.client.venafi.example.com"],
