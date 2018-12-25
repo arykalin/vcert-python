@@ -70,10 +70,10 @@ def main():
 
     if USER or TOKEN:
         print("Trying to renew certificate")
-        conn.renew_cert(request)
         new_request = CertificateRequest(
             id=request.id,
         )
+        conn.renew_cert(new_request)
         while True:
             new_cert = conn.retrieve_cert(new_request)
             if new_cert:
