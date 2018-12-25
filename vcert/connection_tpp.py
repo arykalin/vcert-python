@@ -1,9 +1,10 @@
+from __future__ import absolute_import, division, generators, unicode_literals, print_function, nested_scopes, with_statement
 import requests
 import logging as log
 import base64
 import re
 import time
-from http import HTTPStatus
+from .http import HTTPStatus
 from .errors import (ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError,
                      CertificateRenewError)
 from .common import CommonConnection

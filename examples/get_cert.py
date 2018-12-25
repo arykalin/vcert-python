@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from __future__ import absolute_import, division, generators, unicode_literals, print_function, nested_scopes, with_statement
+
 from vcert import CloudConnection, CertificateRequest, TPPConnection, ConnectionFake
 import string
 import random

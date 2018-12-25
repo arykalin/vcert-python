@@ -1,7 +1,8 @@
+from __future__ import absolute_import, division, generators, unicode_literals, print_function, nested_scopes, with_statement
 import requests
 from os import environ
 import logging as log
-from http import HTTPStatus
+from .http import HTTPStatus
 from .errors import (VenafiConnectionError, ServerUnexptedBehavior, ClientBadData, CertificateRequestError,
                      CertificateRenewError)
 from .common import Zone, CertificateRequest, CommonConnection, Policy, ZoneConfig

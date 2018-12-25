@@ -1,9 +1,10 @@
+from __future__ import absolute_import, division, generators, unicode_literals, print_function, nested_scopes, with_statement
 import datetime
 import dateutil.parser
 import logging as log
 from oscrypto import asymmetric
 from csrbuilder import CSRBuilder, pem_armor_csr
-from http import HTTPStatus
+from .http import HTTPStatus
 from .errors import VenafiConnectionError, ServerUnexptedBehavior, BadData, ClientBadData
 
 MIME_JSON = "application/json"
