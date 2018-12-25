@@ -2,11 +2,9 @@ import requests
 from os import environ
 import logging as log
 from http import HTTPStatus
-from oscrypto import asymmetric
-from csrbuilder import CSRBuilder, pem_armor_csr
-from .errors import VenafiConnectionError, ServerUnexptedBehavior, ClientBadData,CertificateRequestError, CertificateRenewError
+from .errors import (VenafiConnectionError, ServerUnexptedBehavior, ClientBadData, CertificateRequestError,
+                     CertificateRenewError)
 from .common import Zone, CertificateRequest, CommonConnection, Policy, ZoneConfig
-from pprint import pprint
 
 
 class CertStatuses:
@@ -14,6 +12,7 @@ class CertStatuses:
     PENDING = 'PENDING'
     FAILED = 'FAILED'
     ISSUED = 'ISSUED'
+
 
 class URLS:
     CLOUDURL = environ.get('CLOUDURL')
@@ -64,11 +63,11 @@ def log_errors(data):
         log.error("Unknown error format: %s", data)
         return
     for e in data["errors"]:
-        log.error(str(e))  #todo: beta formatter
+        log.error(str(e))  # todo: beta formatter
 
 
 class CloudConnection(CommonConnection):
-    def __init__(self, token, url=None, *args, **kwargs):
+    def __init__(self, token, url=None):
         """
         todo: docs
         """
@@ -77,12 +76,14 @@ class CloudConnection(CommonConnection):
 
     def _get(self, url, params=None):
         # todo: catch requests.exceptions
-        r = requests.get(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token, "Accept": MINE_ANY})
+        r = requests.get(self._base_url + url, params=params,
+                         headers={TOKEN_HEADER_NAME: self._token, "Accept": MINE_ANY, "cache-control": "no-cache"})
         return self.process_server_response(r)
 
-    def _post(self, url, params=None, data=None):
+    def _post(self, url, data=None):
         if isinstance(data, dict):
-            r = requests.post(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token}, json=data)
+            r = requests.post(self._base_url + url, json=data,
+                              headers={TOKEN_HEADER_NAME: self._token,  "cache-control": "no-cache"}, )
         else:
             log.error("Unexpected client data type: %s for %s" % (type(data), url))
             raise ClientBadData
@@ -129,12 +130,11 @@ class CloudConnection(CommonConnection):
                 policy.SANRegexes = p.SANRegexes
             elif p.policy_type == p.Type.CERTIFICATE_USE:
                 policy.key_types = p.key_types[:]
-                policy.KeyReuse = p.KeyReuse
+                policy.key_reuse = p.key_reuse
         return policy
 
     def ping(self):
         status, data = self._get(URLS.PING)
-
         return status == HTTPStatus.OK and data == "OK"
 
     def auth(self):
@@ -160,7 +160,8 @@ class CloudConnection(CommonConnection):
         z = self.get_zone_by_tag(zone)
         if not request.csr:
             request.build_csr()
-        status, data = self._post(URLS.CERTIFICATE_REQUESTS, data={"certificateSigningRequest": request.csr, "zoneId": z.id})
+        status, data = self._post(URLS.CERTIFICATE_REQUESTS,
+                                  data={"certificateSigningRequest": request.csr, "zoneId": z.id})
         if status == HTTPStatus.CREATED:
             request.id = data['certificateRequests'][0]['id']
             return True
@@ -209,7 +210,7 @@ class CloudConnection(CommonConnection):
             log.error("prev_cert_id or thumbprint or manage_id must be specified for renewing certificate")
             raise ClientBadData
         if request.thumbprint:
-            r = self.search_by_thumbprint(thumbprint)
+            r = self.search_by_thumbprint(request.thumbprint)
             request.id = r.id
         if request.id:
             prev_request = self._get_cert_status(CertificateRequest(id=request.id))
@@ -249,28 +250,8 @@ class CloudConnection(CommonConnection):
         z = self.get_zone_by_tag(tag)
         policy = self._get_policy_by_ids((z.default_cert_identity_policy, z.default_cert_use_policy))
         zc = ZoneConfig.from_policy(policy)
+        return zc
 
     def import_cert(self, request):
         # not supported in cloud
         raise NotImplementedError
-
-    def build_request(self, country, province, locality, organization, organization_unit, common_name):
-        public_key, private_key = asymmetric.generate_pair('rsa', bit_size=2048)
-
-        data = {
-            'country_name': country,
-            'state_or_province_name': province,
-            'locality_name': locality,
-            'organization_name': organization,
-            'common_name': common_name,
-        }
-        if organization_unit:
-            data['organizational_unit_name'] = organization_unit
-        builder = CSRBuilder(
-            data,
-            public_key
-        )
-        builder.hash_algo = "sha256"
-        builder.subject_alt_domains = [common_name]
-        request = builder.build(private_key)
-        return pem_armor_csr(request)

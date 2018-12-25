@@ -1,10 +1,8 @@
 import datetime
 import dateutil.parser
-import time
 import logging as log
 from oscrypto import asymmetric
 from csrbuilder import CSRBuilder, pem_armor_csr
-from pprint import pprint
 from http import HTTPStatus
 from .errors import VenafiConnectionError, ServerUnexptedBehavior, BadData, ClientBadData
 
@@ -21,10 +19,10 @@ class CertField(str):
 
 
 class Zone:
-    def __init__(self, id, company_id, tag, zonetype, cert_policy_ids, default_cert_identity_policy,
+    def __init__(self, zone_id, company_id, tag, zonetype, cert_policy_ids, default_cert_identity_policy,
                  default_cert_use_policy, system_generated, creation_date):
         """
-        :param str id:
+        :param str zone_id:
         :param str company_id:
         :param str tag:
         :param str zonetype:
@@ -34,7 +32,7 @@ class Zone:
         :param bool system_generated:
         :param datetime.datetime creation_date:
         """
-        self.id = id
+        self.id = zone_id
         self.company_id = company_id
         self.tag = tag
         self.zonetype = zonetype
@@ -45,7 +43,13 @@ class Zone:
         self.creation_date = creation_date
 
     def __repr__(self):
-        return "%s (%s)" % (self.tag, self.id)
+        return "Zone %s:\n" % self.tag + "\n".join(["  %s: %s" % (k, v) for k, v in (
+            ("Id", self.id),
+            ("CompanyID", self.company_id),
+            ("Type", self.zonetype),
+            ("SystemGenerated", self.system_generated),
+            ("Created", self.creation_date.isoformat())
+        )])
 
     def __str__(self):
         return self.tag
@@ -119,27 +123,26 @@ class Policy:
         CERTIFICATE_USE = "CERTIFICATE_USE"
 
     def __init__(self, policy_type=None, id=None, company_id=None, name=None, system_generated=None, creation_date=None,
-                 cert_provider_id=None,
-                 SubjectCNRegexes=None, SubjectORegexes=None, SubjectOURegexes=None, SubjectSTRegexes=None,
-                 SubjectLRegexes=None,
-                 SubjectCRegexes=None, SANRegexes=None, key_types=None, KeyReuse=None):
+                 cert_provider_id=None, subject_cn_regexes=None, subject_o_regexes=None, subject_ou_regexes=None,
+                 subject_st_regexes=None, subject_l_regexes=None, subject_c_regexes=None, san_regexes=None,
+                 key_types=None, key_reuse=None):
         """
         :param str policy_type:
         :param str id:
         :param str company_id:
         :param str name:
-        :param bool ystem_generated:
+        :param bool system_generated:
         :param datetime.datetime creation_date:
         :param str cert_provider_id:
-        :param list[str] SubjectCNRegexes:
-        :param list[str] SubjectORegexes:
-        :param list[str] SubjectOURegexes:
-        :param list[str] SubjectSTRegexes:
-        :param list[str] SubjectLRegexes:
-        :param list[str] SubjectCRegexes:
-        :param list[str] SANRegexes:
+        :param list[str] subject_cn_regexes:
+        :param list[str] subject_o_regexes:
+        :param list[str] subject_ou_regexes:
+        :param list[str] subject_st_regexes:
+        :param list[str] subject_l_regexes:
+        :param list[str] subject_c_regexes:
+        :param list[str] san_regexes:
         :param list[KeyType] key_types:
-        :param bool KeyReuse:
+        :param bool key_reuse:
         """
         self.policy_type = policy_type
         self.id = id
@@ -148,18 +151,21 @@ class Policy:
         self.system_generated = system_generated
         self.creation_date = creation_date
         self.cert_provider_id = cert_provider_id
-        self.SubjectCNRegexes = SubjectCNRegexes
-        self.SubjectORegexes = SubjectORegexes
-        self.SubjectOURegexes = SubjectOURegexes
-        self.SubjectSTRegexes = SubjectSTRegexes
-        self.SubjectLRegexes = SubjectLRegexes
-        self.SubjectCRegexes = SubjectCRegexes
-        self.SANRegexes = SANRegexes
+        self.SubjectCNRegexes = subject_cn_regexes
+        self.SubjectORegexes = subject_o_regexes
+        self.SubjectOURegexes = subject_ou_regexes
+        self.SubjectSTRegexes = subject_st_regexes
+        self.SubjectLRegexes = subject_l_regexes
+        self.SubjectCRegexes = subject_c_regexes
+        self.SANRegexes = san_regexes
         self.key_types = key_types
-        self.KeyReuse = KeyReuse
+        self.key_reuse = key_reuse
 
     @classmethod
     def from_server_response(cls, d):
+        """
+        :rtype Policy:
+        """
         policy = cls(d['certificatePolicyType'], d['id'], d['companyId'], d['name'], d['systemGenerated'],
                      dateutil.parser.parse(d['creationDate']), d.get('certificateProviderId'),
                      d.get('subjectCNRegexes', []), d.get('subjectORegexes', []), d.get('subjectOURegexes', []),
@@ -170,22 +176,31 @@ class Policy:
         return policy
 
     def __repr__(self):
-        return "policy [%s] %s (%s)" % (self.policy_type, self.name, self.id)
+        return "Policy:\n" + "\n".join(["  %s: %s" % (k, v) for k, v in (
+            ("Id", self.id),
+            ("Type", self.policy_type),
+            ("Name", self.name),
+            ("KeyReuse", self.key_reuse),
+            ("Created", self.creation_date)
+        )])
+
+    def __str__(self):
+        return self.name
 
 
 class CertificateRequest:
     def __init__(self, id=None,
                  status=None,
                  subject=None,
-                 dns_names=[],
+                 dns_names=None,
                  email_addresses="",
-                 ip_addresses=[],
+                 ip_addresses=None,
                  attributes=None,
                  signature_algorithm=None,  # todo: think: maybe remove
                  public_key_algorithm=None,  # todo: think: maybe remove
                  key_type=KeyTypes.RSA,
                  key_length=2048,
-                 key_curve=None,  #todo: default curve
+                 key_curve=None,  # todo: default curve
                  private_key=None,
                  csr_origin=None,
                  key_password=None,
@@ -198,16 +213,16 @@ class CertificateRequest:
         self.csr = csr
         self.chain_option = chain_option
         self.subject = subject
-        self.dns_names = dns_names
+        self.dns_names = dns_names or []
         self.email_addresses = email_addresses
-        self.ip_addresses = ip_addresses
+        self.ip_addresses = ip_addresses or []
         self.attributes = attributes
         self.signature_algorithm = signature_algorithm
         self.public_key_algorithm = public_key_algorithm
         self.key_type = key_type
         self.key_length = key_length
         self.key_curve = key_curve
-        if isinstance( private_key, str):
+        if isinstance(private_key, str):
             self.private_key = asymmetric.load_private_key(private_key)
             self.key_type = self.private_key.algorithm
             self.public_key = None
@@ -262,7 +277,7 @@ class CertificateRequest:
 
     @property
     def private_key_pem(self):
-        return asymmetric.dump_private_key(self.private_key,None,"pem").decode()
+        return asymmetric.dump_private_key(self.private_key, None, "pem").decode()
 
 
 class CommonConnection:
@@ -276,6 +291,10 @@ class CommonConnection:
         raise NotImplementedError
 
     def ping(self):
+        """
+
+        :return:
+        """
         raise NotImplementedError
 
     def auth(self):
@@ -288,13 +307,6 @@ class CommonConnection:
         """
         :param str tag:
         :rtype Zone
-        """
-        raise NotImplementedError
-
-    def build_request(self, country, province, locality, organization, organization_unit, common_name):
-        """
-        :param str csr: Certitficate in PEM format
-        :param str zone: Venafi zone tag name
         """
         raise NotImplementedError
 
@@ -335,7 +347,7 @@ class CommonConnection:
     def process_server_response(r):
         if r.status_code not in (HTTPStatus.OK, HTTPStatus.ACCEPTED, HTTPStatus.CREATED, HTTPStatus.CONFLICT):
             raise VenafiConnectionError("Server status: %s, %s\n Response: %s",
-                                        (r.status_code, r.request.url, r._content))
+                                        (r.status_code, r.request.url, r.content))
         content_type = r.headers.get("content-type")
         if content_type == MINE_TEXT:
             log.debug(r.text)
