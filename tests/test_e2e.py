@@ -9,6 +9,7 @@ import unittest
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509.oid import NameOID
+from cryptography.hazmat.primitives import serialization
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("urllib3").setLevel(logging.ERROR)
@@ -101,6 +102,21 @@ def enroll(conn, ZONE, cn):
             NameOID.COMMON_NAME, cn
         )
     ]
+
+    private_key = serialization.load_pem_private_key(request.private_key_pem.encode(), password=None,
+                                                     backend=default_backend())
+    private_key_public_key_pem = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+    public_key_pem = cert.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+    print(private_key_public_key_pem.decode())
+    print(public_key_pem.decode())
+    assert private_key_public_key_pem == public_key_pem
+
     return request.id, request.private_key_pem, cert.serial_number
 
 def renew(conn, cert_id, pkey, sn, cn):
@@ -110,6 +126,7 @@ def renew(conn, cert_id, pkey, sn, cn):
         chain_option="last"
     )
     conn.renew_cert(new_request)
+    time.sleep(5)
     while True:
         new_cert_pem = conn.retrieve_cert(new_request)
         if new_cert_pem:
@@ -129,6 +146,16 @@ def renew(conn, cert_id, pkey, sn, cn):
         )
     ]
     assert cert.serial_number != sn
+    private_key = serialization.load_pem_private_key(pkey.encode(), password=None, backend=default_backend())
+    private_key_public_key_pem = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+    public_key_pem = cert.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+    assert private_key_public_key_pem == public_key_pem
 
 if __name__ == '__main__':
     main()
