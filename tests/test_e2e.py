@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-from vcert import CloudConnection, CertificateRequest, TPPConnection, FakeConnection
+from vcert import CloudConnection, CertificateRequest, TPPConnection, ConnectionFake
 import string
 import random
 import logging
 import time
 from os import environ
 import unittest
+from oscrypto import asymmetric, keys
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("urllib3").setLevel(logging.ERROR)
@@ -22,7 +23,7 @@ class TestStringMethods(unittest.TestCase):
 
     def test_fake(self):
         print("Using fake connection")
-        conn = FakeConnection()
+        conn = ConnectionFake()
         ZONE = "Default"
         cert_id, pkey=enroll(conn, ZONE)
         # renew(conn, cert_id, pkey)
@@ -49,16 +50,17 @@ def enroll(conn, ZONE):
         print('Server offline')
         exit(1)
 
-    if isinstance(conn, (FakeConnection or TPPConnection)):
+    cn = randomword(10) + ".venafi.example.com"
+    if isinstance(conn, (ConnectionFake or TPPConnection)):
         request = CertificateRequest(
-            common_name=randomword(10) + ".venafi.example.com",
+            common_name=cn,
             dns_names=["www.client.venafi.example.com", "ww1.client.venafi.example.com"],
             email_addresses="e1@venafi.example.com, e2@venafi.example.com",
             ip_addresses=["127.0.0.1", "192.168.1.1"]
         )
     else:
         request = CertificateRequest(
-            common_name=randomword(10) + ".venafi.example.com",
+            common_name=cn,
         )
 
     conn.request_cert(request, ZONE)
@@ -70,11 +72,13 @@ def enroll(conn, ZONE):
             time.sleep(5)
     print(cert)
     print(request.private_key_pem)
-    f = open("/tmp/cert.pem", "w")
-    f.write(cert)
-    f = open("/tmp/cert.key", "w")
-    f.write(request.private_key_pem)
-    f.close()
+    # certificate = asymmetric.load_certificate(cert)
+    # private_key = asymmetric.load_private_key(request.private_key_pem)
+    certificate = keys.parse_certificate(cert.encode())
+    private_key = keys.parse_private(request.private_key_pem.encode())
+    print(certificate)
+    print(private_key)
+
     return request.id, request.private_key_pem
 
 def renew(conn, cert_id, pkey):
