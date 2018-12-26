@@ -4,3 +4,5 @@ oscrypto
 certbuilder
 csrbuilder
 certvalidator
+asn1crypto
+cryptography

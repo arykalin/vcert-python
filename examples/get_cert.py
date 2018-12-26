@@ -33,6 +33,7 @@ def main():
         request.dns_names = ["www.client.venafi.example.com", "ww1.client.venafi.example.com"],
         request.email_addresses = "e1@venafi.example.com, e2@venafi.example.com",
         request.ip_addresses = ["127.0.0.1", "192.168.1.1"]
+        request.chain_option = "last"
 
     # make certificate request
     conn.request_cert(request, zone)
@@ -52,6 +53,7 @@ def main():
     f.write(cert)
     f = open("/tmp/cert.key", "w")
     f.write(request.private_key_pem)
+    f.close()
 
     if not isinstance(conn, FakeConnection):
         # fake connection doesn`t support certificate renewing
