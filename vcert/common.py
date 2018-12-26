@@ -1,11 +1,15 @@
-from __future__ import absolute_import, division, generators, unicode_literals, print_function, nested_scopes, with_statement
+from __future__ import absolute_import, division, generators, unicode_literals, print_function, nested_scopes, \
+    with_statement
+
 import datetime
-import dateutil.parser
 import logging as log
-from oscrypto import asymmetric
+
+import dateutil.parser
 from csrbuilder import CSRBuilder, pem_armor_csr
-from .http import HTTPStatus
+from oscrypto import asymmetric
+
 from .errors import VenafiConnectionError, ServerUnexptedBehavior, BadData, ClientBadData
+from .http import HTTPStatus
 
 MIME_JSON = "application/json"
 MINE_HTML = "text/html"
@@ -17,6 +21,14 @@ class CertField(str):
     def __init__(self, *args, **kwargs):
         self.locked = False
         super(CertField, self).__init__(*args, **kwargs)
+
+
+def log_errors(data):
+    if "errors" not in data:
+        log.error("Unknown error format: %s", data)
+        return
+    for e in data["errors"]:
+        log.error(str(e))  # todo: beta formatter
 
 
 class Zone:
@@ -113,9 +125,7 @@ class ZoneConfig:
         """
         :param Policy policy:
         """
-        zone_config = cls()
-        zone_config.allowed_key_configurations = policy.key_types[:]
-        return zone_config
+        return cls(allowed_key_configurations=policy.key_types[:])
 
 
 class Policy:
@@ -288,9 +298,6 @@ class CommonConnection:
         """
         raise NotImplementedError
 
-    def _get_policy_by_ids(self, policy_ids):
-        raise NotImplementedError
-
     def ping(self):
         """
 
@@ -299,16 +306,6 @@ class CommonConnection:
         raise NotImplementedError
 
     def auth(self):
-        raise NotImplementedError
-
-    def register(self, email):
-        raise NotImplementedError
-
-    def get_zone_by_tag(self, tag):
-        """
-        :param str tag:
-        :rtype Zone
-        """
         raise NotImplementedError
 
     def request_cert(self, request, zone):

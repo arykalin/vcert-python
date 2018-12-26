@@ -1,10 +1,15 @@
-from __future__ import absolute_import, division, generators, unicode_literals, print_function, nested_scopes, with_statement
-import requests
+from __future__ import (absolute_import, division, generators, unicode_literals, print_function, nested_scopes,
+                        with_statement)
+
 import logging as log
-from .http import HTTPStatus
+
+import requests
+
+from .common import (Zone, CertificateRequest, CommonConnection, Policy, ZoneConfig, log_errors, MIME_JSON, MINE_TEXT,
+                     MINE_ANY)
 from .errors import (VenafiConnectionError, ServerUnexptedBehavior, ClientBadData, CertificateRequestError,
                      CertificateRenewError)
-from .common import Zone, CertificateRequest, CommonConnection, Policy, ZoneConfig
+from .http import HTTPStatus
 
 
 class CertStatuses:
@@ -39,11 +44,6 @@ class CondorChainOptions:
 
 TOKEN_HEADER_NAME = "tppl-api-key"
 
-# todo: check stdlib
-MIME_JSON = "application/json"
-MINE_TEXT = "text/plain"
-MINE_ANY = "*/*"
-
 
 class CertificateStatusResponse:
     def __init__(self, d):
@@ -51,15 +51,6 @@ class CertificateStatusResponse:
         self.subject = d['subjectDN']
         self.zoneId = d['zoneId']
         self.manage_id = d.get('managedCertificateId')
-
-
-# todo: maybe move this function
-def log_errors(data):
-    if "errors" not in data:
-        log.error("Unknown error format: %s", data)
-        return
-    for e in data["errors"]:
-        log.error(str(e))  # todo: beta formatter
 
 
 class CloudConnection(CommonConnection):
@@ -138,12 +129,11 @@ class CloudConnection(CommonConnection):
         if status == HTTPStatus.OK:
             return data
 
-    def register(self, email):
-        status, data = self._post(URLS.USER_ACCOUNTS, data={"username": email, "userAccountType": "API"})
-        if status == HTTPStatus.ACCEPTED:
-            return data
-
-    def get_zone_by_tag(self, tag):
+    def _get_zone_by_tag(self, tag):
+        """
+        :param str tag:
+        :rtype Zone
+        """
         status, data = self._get(URLS.ZONE_BY_TAG % tag)
         if status == HTTPStatus.OK:
             return Zone.from_server_response(data)
@@ -153,7 +143,7 @@ class CloudConnection(CommonConnection):
             pass
 
     def request_cert(self, request, zone):
-        z = self.get_zone_by_tag(zone)
+        z = self._get_zone_by_tag(zone)
         if not request.csr:
             request.build_csr()
         status, data = self._post(URLS.CERTIFICATE_REQUESTS,
@@ -243,7 +233,7 @@ class CloudConnection(CommonConnection):
         raise NotImplementedError
 
     def read_zone_conf(self, tag):
-        z = self.get_zone_by_tag(tag)
+        z = self._get_zone_by_tag(tag)
         policy = self._get_policy_by_ids((z.default_cert_identity_policy, z.default_cert_use_policy))
         zc = ZoneConfig.from_policy(policy)
         return zc
