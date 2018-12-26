@@ -70,12 +70,12 @@ def enroll(conn, ZONE, cn):
             dns_names=["www.client.venafi.example.com", "ww1.client.venafi.example.com"],
             email_addresses="e1@venafi.example.com, e2@venafi.example.com",
             ip_addresses=["127.0.0.1", "192.168.1.1"],
-            chain_option="first"
+            chain_option="last"
         )
     else:
         request = CertificateRequest(
             common_name=cn,
-            chain_option="first"
+            chain_option="last"
         )
 
     conn.request_cert(request, ZONE)
@@ -107,7 +107,7 @@ def renew(conn, cert_id, pkey, sn, cn):
     print("Trying to renew certificate")
     new_request = CertificateRequest(
         id=cert_id,
-        chain_option="first"
+        chain_option="last"
     )
     conn.renew_cert(new_request)
     while True:
@@ -128,7 +128,7 @@ def renew(conn, cert_id, pkey, sn, cn):
             NameOID.COMMON_NAME, cn
         )
     ]
-    assert cert.serial_number == sn
+    assert cert.serial_number != sn
 
 if __name__ == '__main__':
     main()
