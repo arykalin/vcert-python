@@ -99,12 +99,13 @@ def fake_zone(zone=None):
     return z
 
 
-class ConnectionFake(CommonConnection):
+class FakeConnection(CommonConnection):
     def __init__(self, *args, **kwargs):
         """
         todo: docs
         """
         self.status = "200"
+        self._base_url = "fake"
 
     def ping(self):
         return self.status
@@ -121,17 +122,15 @@ class ConnectionFake(CommonConnection):
     def request_cert(self, request, zone):
         if not request.csr:
             request.build_csr()
-            data = {"PolicyDN": zone,
-                    "PKCS10": request.csr,
-                    "ObjectName": request.friendly_name,
-                    "CertificateDN": request.friendly_name,
-                    "DisableAutomaticRenewal": "true"}
-            request.id = data['CertificateDN']
-            log.debug("Certificate sucessfully requested with request id %s." % request.id)
-            return request
-        else:
-            log.error("Request status is not %s. %s." % HTTPStatus.OK, status)
-            raise CertificateRequestError
+        data = {"PolicyDN": zone,
+                "PKCS10": request.csr,
+                "ObjectName": request.friendly_name,
+                "CertificateDN": request.friendly_name,
+                "DisableAutomaticRenewal": "true"}
+        request.id = data['CertificateDN']
+        log.debug("Certificate sucessfully requested with request id %s." % request.id)
+        return request
+
 
     def retrieve_cert(self, certificate_request):
         log.debug("Getting certificate status for id %s" % certificate_request.id)

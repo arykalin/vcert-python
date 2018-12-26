@@ -1,9 +1,12 @@
+from __future__ import absolute_import, division, generators, unicode_literals, print_function, nested_scopes, with_statement
 import requests
 import logging as log
 import base64
 import re
-from http import HTTPStatus
-from .errors import ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError, CertificateRenewError
+import time
+from .http import HTTPStatus
+from .errors import (ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError,
+                     CertificateRenewError)
 from .common import CommonConnection
 
 
@@ -39,40 +42,38 @@ def log_errors(data):
 
 
 class TPPConnection(CommonConnection):
-    def __init__(self, user, password, url, *args, **kwargs):
+    def __init__(self, user, password, url):
         """
         todo: docs
-        :type str user
-        :type str password
-        :type str url
+        :param str user:
+        :param str password:
+        :param str url:
         """
         self._base_url = url  # type: str
         self._user = user  # type: str
         self._password = password  # type: str
-        self._token = False
+        self._token = None  # type: tuple
         self._normalize_and_verify_base_url()
         # todo: add timeout check, like self.token = ("token-string-dsfsfdsfdsfdsf", valid_to)
 
     def _get(self, url="", params=None):
         # todo: catch requests.exceptions
-        if not self._token:
-            self._token = self.auth()
+        if not self._token or self._token[1] < time.time() + 1:
+            self.auth()
             log.debug("Token is %s, timeout is %s" % (self._token[0], self._token[1]))
 
         r = requests.get(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token[0], 'content-type':
-            MIME_JSON, 'cache-control':
-                                                            'no-cache'})
+                         MIME_JSON, 'cache-control': 'no-cache'}, params=params)
         return self.process_server_response(r)
 
-    def _post(self, url, params=None, data=None):
-        if not self._token:
-            self._token = self.auth()
+    def _post(self, url, data=None):
+        if not self._token or self._token[1] < time.time() + 1:
+            self.auth()
             log.debug("Token is %s, timeout is %s" % (self._token[0], self._token[1]))
 
         if isinstance(data, dict):
             r = requests.post(self._base_url + url, headers={TOKEN_HEADER_NAME: self._token[0], 'content-type':
-                MIME_JSON, "cache-control":
-                                                                 "no-cache"}, json=data)
+                              MIME_JSON, "cache-control": "no-cache"}, json=data)
         else:
             log.error("Unexpected client data type: %s for %s" % (type(data), url))
             raise ClientBadData
@@ -82,7 +83,6 @@ class TPPConnection(CommonConnection):
         status, data = self._post(URLS.CERTIFICATE_RETRIEVE % request.id)
         if status == HTTPStatus.OK:
             return data
-
 
     def _normalize_and_verify_base_url(self):
         u = self._base_url
@@ -94,7 +94,7 @@ class TPPConnection(CommonConnection):
             u += "/"
         if not u.endswith("vedsdk/"):
             u += "vedsdk/"
-        if not re.match(r"^https://[a-z\d]+[-a-z\d\.]+[a-z\d][:\d]*/vedsdk/$", u):
+        if not re.match(r"^https://[a-z\d]+[-a-z\d.]+[a-z\d][:\d]*/vedsdk/$", u):
             raise ClientBadData
         self._base_url = u
 
@@ -105,13 +105,14 @@ class TPPConnection(CommonConnection):
     def auth(self):
         data = {"Username": self._user, "Password": self._password}
 
-        r = requests.post(self._base_url + URLS.AUTHORIZE, headers={'content-type':
-                                                                        MIME_JSON, "cache-control": "no-cache"},
-                          json=data)
+        r = requests.post(self._base_url + URLS.AUTHORIZE, json=data,
+                          headers={'content-type': MIME_JSON, "cache-control": "no-cache"})
 
-        status = self.process_server_response(r)
-        if status[0] == HTTPStatus.OK:
-            return status[1]["APIKey"], status[1]["ValidUntil"]
+        status, user = self.process_server_response(r)
+        if status == HTTPStatus.OK:
+            valid_until = int(re.sub(r"\D", "", user["ValidUntil"]))
+            self._token = user["APIKey"], valid_until
+            return user
         else:
             log.error("Authentication status is not %s but %s. Exiting" % (HTTPStatus.OK, status[0]))
             raise AuthenticationError
@@ -178,7 +179,8 @@ class TPPConnection(CommonConnection):
     def import_cert(self, request):
         raise NotImplementedError
 
-    def _get_policy_dn(self, zone):
+    @staticmethod
+    def _get_policy_dn(zone):
         if re.match(r"^\\\\VED\\\\Policy", zone):
             return zone
         else:

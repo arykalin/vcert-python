@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from vcert import CloudConnection, CertificateRequest, TPPConnection, ConnectionFake
+from vcert import CloudConnection, CertificateRequest, TPPConnection, FakeConnection
 import string
 import random
 import logging
@@ -23,7 +23,7 @@ class TestStringMethods(unittest.TestCase):
 
     def test_fake(self):
         print("Using fake connection")
-        conn = ConnectionFake()
+        conn = FakeConnection()
         ZONE = "Default"
         cert_id, pkey=enroll(conn, ZONE)
         # renew(conn, cert_id, pkey)
@@ -31,7 +31,7 @@ class TestStringMethods(unittest.TestCase):
     def test_cloud(self):
         print("Using cloud connection")
         ZONE = environ['CLOUDZONE']
-        conn = CloudConnection(TOKEN)
+        conn = CloudConnection(token=TOKEN,url=environ.get('CLOUDURL'))
         cert_id, pkey=enroll(conn, ZONE)
         renew(conn, cert_id, pkey)
 
@@ -51,7 +51,7 @@ def enroll(conn, ZONE):
         exit(1)
 
     cn = randomword(10) + ".venafi.example.com"
-    if isinstance(conn, (ConnectionFake or TPPConnection)):
+    if isinstance(conn, (FakeConnection or TPPConnection)):
         request = CertificateRequest(
             common_name=cn,
             dns_names=["www.client.venafi.example.com", "ww1.client.venafi.example.com"],
@@ -74,10 +74,10 @@ def enroll(conn, ZONE):
     print(request.private_key_pem)
     # certificate = asymmetric.load_certificate(cert)
     # private_key = asymmetric.load_private_key(request.private_key_pem)
-    certificate = keys.parse_certificate(cert.encode())
-    private_key = keys.parse_private(request.private_key_pem.encode())
-    print(certificate)
-    print(private_key)
+    # certificate = keys.parse_certificate(cert.encode())
+    # private_key = keys.parse_private(request.private_key_pem.encode())
+    # print(certificate)
+    # print(private_key)
 
     return request.id, request.private_key_pem
 
