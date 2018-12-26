@@ -1,13 +1,17 @@
-from __future__ import absolute_import, division, generators, unicode_literals, print_function, nested_scopes, with_statement
-import requests
-import logging as log
+from __future__ import (absolute_import, division, generators, unicode_literals, print_function, nested_scopes,
+                        with_statement)
+
 import base64
+import logging as log
 import re
 import time
-from .http import HTTPStatus
+
+import requests
+
+from .common import CommonConnection, MIME_JSON
 from .errors import (ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError,
                      CertificateRenewError)
-from .common import CommonConnection
+from .http import HTTPStatus
 
 
 class URLS:
@@ -24,21 +28,6 @@ class URLS:
 
 
 TOKEN_HEADER_NAME = "x-venafi-api-key"
-
-# todo: check stdlib
-MIME_JSON = "application/json"
-MINE_HTML = "text/html"
-MINE_TEXT = "text/plain"
-MINE_ANY = "*/*"
-
-
-# todo: maybe move this function
-def log_errors(data):
-    if "errors" not in data:
-        log.error("Unknown error format: %s", data)
-        return
-    for e in data["errors"]:
-        log.error(str(e))  # todo: beta formatter
 
 
 class TPPConnection(CommonConnection):

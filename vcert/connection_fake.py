@@ -2,9 +2,7 @@ import logging as log
 import time
 from oscrypto import asymmetric
 from certbuilder import CertificateBuilder, pem_armor_certificate
-from http import HTTPStatus
-from .errors import ServerUnexptedBehavior, ClientBadData, CertificateRequestError, AuthenticationError, \
-    CertificateRenewError
+
 import uuid
 from .common import CommonConnection, Zone
 
@@ -116,7 +114,7 @@ class FakeConnection(CommonConnection):
     def register(self, email):
         return fake_user(email)
 
-    def get_zone_by_tag(self, tag):
+    def _get_zone_by_tag(self, tag):
         return Zone.from_server_response(fake_zone(tag))
 
     def request_cert(self, request, zone):
