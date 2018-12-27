@@ -14,8 +14,8 @@ logging.getLogger("urllib3").setLevel(logging.ERROR)
 
 def main():
     token = environ.get('TOKEN')
-    user = environ.get('USER')
-    password = environ.get('PASSWORD')
+    user = environ.get('TPPUSER')
+    password = environ.get('TPPPASSWORD')
     url = environ.get('URL')
     zone = environ.get("ZONE")
     conn = Connection(url=url, token=token, user=user, password=password)
