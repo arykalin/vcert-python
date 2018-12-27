@@ -31,6 +31,7 @@ TOKEN_HEADER_NAME = "x-venafi-api-key"
 
 
 class TPPConnection(CommonConnection):
+    # todo: TLS verify off
     def __init__(self, user, password, url):
         """
         todo: docs
