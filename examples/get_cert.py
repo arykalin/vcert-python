@@ -16,7 +16,7 @@ def main():
     token = environ.get('TOKEN')
     user = environ.get('TPPUSER')
     password = environ.get('TPPPASSWORD')
-    url = environ.get('URL')
+    url = environ.get('TPPURL')
     zone = environ.get("ZONE")
     conn = Connection(url=url, token=token, user=user, password=password)
 
